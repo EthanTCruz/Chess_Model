@@ -1,40 +1,47 @@
-class Node:
-    def __init__(self, value):
-        self.value = value
-        self.children = []
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+import matplotlib.pyplot as plt
+from sklearn.tree import plot_tree
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
 
-    def add_child(self, child_node):
-        self.children.append(child_node)
-# create the nodes
-a = Node(1)
-b = Node(2)
-c = Node(3)
-d = Node(4)
-e = Node(5)
-f = Node(6)
-g = Node(7)
-h = Node(8)
 
-# build the tree structure
-a.add_child(b)
-a.add_child(c)
-a.add_child(d)
-a.add_child(e)
-b.add_child(f)
-b.add_child(g)
-e.add_child(h)
+# Create a hypothetical dataset with categorical features
+data = pd.DataFrame({
+    'color': ['red', 'blue', 'green', 'blue', 'red', 'green'],
+    'shape': ['circle', 'square', 'circle', 'circle', 'square', 'circle'],
+    'label': ['A', 'B', 'A', 'A', 'B', 'A']
+})
 
-def dfs(node, target_value):
-    if node.value == target_value:
-        return node
-    for child in node.children:
-        result = dfs(child, target_value)
-        if result is not None:
-            return result
-    return None
+# Use LabelEncoder to convert categorical features to numerical values
+color_encoder = LabelEncoder()
+shape_encoder = LabelEncoder()
 
-result = dfs(a, 6)
-if result is not None:
-    print("Found node with value:", result.value)
-else:
-    print("Node not found")
+data['color_encoded'] = color_encoder.fit_transform(data['color'])
+data['shape_encoded'] = shape_encoder.fit_transform(data['shape'])
+
+# Split the dataset into features (X) and target (y)
+X = data[['color_encoded', 'shape_encoded']]
+y = data['label']
+
+
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train the decision tree model
+model = DecisionTreeClassifier()
+model.fit(X_train, y_train)
+
+
+# Make predictions on the testing set
+y_pred = model.predict(X_test)
+
+# Print the predictions
+print("Predictions:", y_pred)
+
+
+# Assuming the decision tree model has been trained and is named 'model'
+plt.figure(figsize=(12, 8))
+plot_tree(model, filled=True, feature_names=['color_encoded', 'shape_encoded'], class_names=['A', 'B','C','D'])
+plt.show()

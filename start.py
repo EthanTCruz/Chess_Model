@@ -36,18 +36,23 @@ def get_movesv5(board: ezboard.ezboard,moves = []):
         board.go_back(num_of_moves=1)
 '''
 
-def get_movev5(board: ezboard.ezboard, moves: list[str] = [], depth: int = DEPTH):
+def get_moves(board: ezboard.ezboard, moves: list[str] = [], depth: int = DEPTH):
     move_dict = {}
     for move in moves:
         try:
             board.push_uci(move)
             if len(board.move_stack) > depth:
-                print(f"DEPTH reached on {str([move.uci() for move in board.move_stack])}")
-                r.set(str([move.uci() for move in board.move_stack]), board.fen())
+                #implement nn here
+                value = "undefined"
+                if board.is_checkmate():
+                    value = "checkmate"
+                if board.is_stalemate():
+                    value = "stalemate"
+                r.set(f'{str([move.uci() for move in board.move_stack])}:{ board.fen()}',"undefined")
             else:
                 legal_moves = get_legal_moves(board)
                 if legal_moves:
-                    sub_dict = get_movev5(board, legal_moves, depth)
+                    sub_dict = get_moves(board, legal_moves, depth)
                     move_dict.update(sub_dict)
         except ValueError:
             pass
@@ -55,8 +60,15 @@ def get_movev5(board: ezboard.ezboard, moves: list[str] = [], depth: int = DEPTH
     return move_dict
         
 test_board = ezboard.ezboard()
-get_movev5(board=test_board,moves=get_legal_moves(board=test_board))
-
+get_moves(board=test_board,moves=get_legal_moves(board=test_board))
+'''
+import json
+import redis
+r = redis.Redis(host='localhost', port=6379)
+data = r.keys(pattern="*'e2e3', 'd7d6', 'f1d3'*") 
+t = data[0].decode('utf-8')
+json.loads('"{'+t+'}"')
+'''
 #"rnbqkbnr/ppppp1pp/8/5p2/8/2P3P1/PP1PPP1P/RNBQKBNR b KQkq - 0 2"
 #"rnbqkbnr/ppppp1pp/8/5p2/8/2P3P1/PP1PPP1P/RNBQKBNR b KQkq - 0 2"
 #rint(get_all_boards(boards=[test_board]))
