@@ -4,3 +4,4 @@
 ./env
 ./__pycache__/
 data.csv
+__pycache__/

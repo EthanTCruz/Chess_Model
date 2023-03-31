@@ -37,7 +37,6 @@ class game_analyzer:
                 cursor, keys = r.scan(cursor=cursor, count=count)
                 # Print the retrieved keys
                 for key in keys:
-                    print(key.decode('utf-8'))
                     values = key.decode('utf-8').split(":")
                     moves = [values[0]]
                     fen = values[1]
