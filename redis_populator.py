@@ -11,10 +11,16 @@ DEPTH = 2
 
 class populator():
 
-    def __init__(self,depth,board: chess.Board):
+    def __init__(self,depth,board: chess.Board,pgn = None,victor = None):
         self.DEPTH = depth
         self.r = redis.Redis(host='localhost', port=6379)
         self.board = board
+        if pgn is not None:
+            self.pgn = pgn
+            if victor is not None:
+                raise Exception("Need victor color")
+            else:
+                self.victor = victor
 
     def reset_and_fill_redis(self):
         self.r.flushdb()
@@ -35,6 +41,7 @@ class populator():
                 if len(board.move_stack) > self.DEPTH:
                     #implement nn here
                     value = "undefined"
+
                     if board.is_checkmate():
                         value = "checkmate"
                     if board.is_stalemate():
@@ -49,5 +56,6 @@ class populator():
                 pass
             board.pop()
         return move_dict
+    
         
 

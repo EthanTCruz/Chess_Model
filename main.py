@@ -9,6 +9,9 @@ def main():
     gam_an_obj = game_analyzer.game_analyzer(player='w')
     gam_an_obj.process_redis_boards()
 
+
+
+
 def test_model():
     return 0
 def train_model():

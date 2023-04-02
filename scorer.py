@@ -8,13 +8,13 @@ class boardEval:
         self.board = chess.Board(fen=fen)
         self.player = player
 
-    def get_board_scores(self):
+    def get_board_scores(self,victor="NA"):
         results = self.get_piece_amounts()
         results += self.number_of_moves()
         results += [self.is_checkmate()]
         results += [self.get_game_time()]
         #for w/l
-        results += [0]
+        results += [victor]
         return results
 
 

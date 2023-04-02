@@ -50,9 +50,9 @@ class game_analyzer:
                 if cursor == 0:
                     break
 
-    def evaluate_board(self,fen):
+    def evaluate_board(self,fen,victor="NA"):
         evaluator = scorer.boardEval(fen=fen,player=self.player)
-        return evaluator.get_board_scores()
+        return evaluator.get_board_scores(victor=victor)
 
     def create_csv(self):
         # Check if the file exists and remove it
