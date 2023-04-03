@@ -13,11 +13,26 @@ class boardEval:
             self.player = victor
         results = self.get_piece_amounts()
         results += self.number_of_moves()
+        results += self.middle_square_attacks()
         results += [self.is_checkmate()]
         results += [self.get_game_time()]
         #for w/l
         results += [victor]
         return results
+
+    def middle_square_attacks(self):
+        middle_squares =[chess.E4,chess.E5,chess.D4,chess.D5]
+        square_possesion = []
+
+        for square in middle_squares:
+            
+            if self.player == 'w':
+                attackers = str(self.board.attackers(chess.WHITE,square=square)).count("1") - str(self.board.attackers(chess.BLACK,square=square)).count("1")
+                square_possesion.append(attackers)
+            else:
+                attackers = str(self.board.attackers(chess.BLACK,square=square)).count("1") - str(self.board.attackers(chess.WHITE,square=square)).count("1")
+                square_possesion.append(attackers)
+        return square_possesion
 
 
     def get_piece_amounts(self):

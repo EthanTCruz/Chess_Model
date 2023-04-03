@@ -10,7 +10,8 @@ Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP
 
 class game_analyzer:
     def __init__(self,player,output_file) -> None:
-        self.features = ["moves(id)","pawns","knights","bishops","rooks","queens","my moves","opp moves","checkmate","game time","w/l"]
+        self.features = ["moves(id)","pawns","knights","bishops","rooks","queens","my moves","opp moves",
+                         "e4 possesion","e5 possesion","d4 possesion","d5 possesion","checkmate","game time","w/b"]
         self.output_file = output_file
         self.persist_data = False
         self.player = player

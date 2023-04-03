@@ -8,7 +8,7 @@ class pgn_processor():
         self.csv_file = csv_file
     
 
-    def pgn_fen_to_csv(self):
+    def pgn_fen_to_csv(self,victor="NA"):
         pgn = open(self.pgn_file)
         with open(self.csv_file, 'a', newline='') as csvfile:
                     writer = csv.writer(csvfile)
@@ -27,8 +27,18 @@ class pgn_processor():
                             for move in game.mainline_moves():
                                 move_list.append(move)
                                 board.push(move=move)
-                                row = [str([move.uci() for move in board.move_stack]),board.fen(),victor]
-                                writer.writerow(row)    
+                                row = ''
+                                #only want to proccess winning player moves
+                                if victor != 'NA':
+                                    if victor == 'w' and not board.turn:
+                                        row = [str([move.uci() for move in board.move_stack]),board.fen(),victor]
+                                        writer.writerow(row)
+                                    elif victor =='b' and  board.turn:
+                                        row = [str([move.uci() for move in board.move_stack]),board.fen(),victor]
+                                        writer.writerow(row)
+                                else:
+                                    row = [str([move.uci() for move in board.move_stack]),board.fen(),victor]
+                                    writer.writerow(row)   
 
 
 

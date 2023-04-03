@@ -2,16 +2,32 @@ import redis_populator
 import game_analyzer
 import chess
 from pgn_processor import pgn_processor
+from test_nn_start import neural_net
+import os
+
+scores_file = "data.csv"
+pgn_file = "sample.pgn"
+games_csv_file = "games.csv"
 
 def main():
-    print("start")
-    gam_an_obj = game_analyzer.game_analyzer(player='w',output_file="data.csv")
-    pgn_obj = pgn_processor(pgn_file='sample.pgn',csv_file='games.csv')
+    if os.path.exists(scores_file):
+        os.remove(scores_file)
+    if os.path.exists(games_csv_file):
+        os.remove(games_csv_file)
+
+    gam_an_obj = game_analyzer.game_analyzer(player='w',output_file=scores_file)
+    pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
+        
     pgn_obj.pgn_fen_to_csv()
-    gam_an_obj.process_csv_boards(csv_file="games.csv")
+    print("Converted pgn to csv")
+    gam_an_obj.process_csv_boards(csv_file=games_csv_file)
+    print("Evaluated csv boards")
+
+    print("Create neural net")
+    nn = neural_net(filename=scores_file,taget_feature='w/b',test_size=0.3)
+    nn.create_and_evaluate_model()
 
 
-    
     '''
     board = chess.Board()
     red_obj = redis_populator.populator(depth=2,board=board)
