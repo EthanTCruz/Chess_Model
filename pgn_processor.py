@@ -1,29 +1,36 @@
 import chess.pgn
+import csv
 
 
-
-class pgn_trainer():
-    def __init__(self,pgn_file) -> None:
+class pgn_processor():
+    def __init__(self,pgn_file,csv_file) -> None:
         self.pgn_file = pgn_file
+        self.csv_file = csv_file
+    
 
-pgn = open('Adams.pgn')
+    def pgn_fen_to_csv(self):
+        pgn = open(self.pgn_file)
+        with open(self.csv_file, 'a', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    while True:
+                        game = chess.pgn.read_game(pgn)
+                        if game is None:
+                            break  # end of file
+                        board = game.board()
+                        victor = 's'
+                        if game.headers["Result"] == '1-0':
+                            victor = 'w'
+                        elif game.headers["Result"] == '0-1':
+                            victor = 'b'
+                        if victor != 's':
+                            move_list = []
+                            for move in game.mainline_moves():
+                                move_list.append(move)
+                                board.push(move=move)
+                                row = [str([move.uci() for move in board.move_stack]),board.fen(),victor]
+                                writer.writerow(row)    
 
 
 
-my_list = []
 
-while True:
-    game = chess.pgn.read_game(pgn)
-    if game is None:
-        break  # end of file
-    board = game.board()
-    victor = 's'
-    if game.headers["Result"] == '1-0':
-        victor = 'w'
-    elif game.headers["Result"] == '1-0':
-        victor = 'b'
-    for move in game.mainline_moves():
-        board.push(move=move)
 
-        print(board.fen())
-    my_list.append(game)

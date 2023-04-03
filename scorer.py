@@ -9,6 +9,8 @@ class boardEval:
         self.player = player
 
     def get_board_scores(self,victor="NA"):
+        if victor != "NA":
+            self.player = victor
         results = self.get_piece_amounts()
         results += self.number_of_moves()
         results += [self.is_checkmate()]
@@ -37,7 +39,12 @@ class boardEval:
         count = count - board.count("/")
         for i in range(1,9):
             count = count - board.count(str(i))
-        return (round(count/32))
+        value = 3
+        if (count/32) > (1/3):
+            value =  2
+        if (count/32) > (2/3):
+            value =  1
+        return (value)
 
     def is_checkmate(self):
         turn = self.fen.split(" ")[1]
@@ -57,7 +64,8 @@ class boardEval:
             fen = fen + " "+value
         board = chess.Board(fen=fen)
         moves = list(board.legal_moves)
-        return len(moves)
+        #max moves from one side is 187?
+        return (len(moves)/187)
 
     def number_of_moves(self):
         black = self.possible_moves(player='b')

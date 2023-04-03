@@ -9,23 +9,44 @@ import scorer
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 
 class game_analyzer:
-    def __init__(self,player) -> None:
+    def __init__(self,player,output_file) -> None:
         self.features = ["moves(id)","pawns","knights","bishops","rooks","queens","my moves","opp moves","checkmate","game time","w/l"]
-        self.output_file = "data.csv"
+        self.output_file = output_file
         self.persist_data = False
         self.player = player
         self.create_csv()
 
-    def process_single_board(self,board_key):
+    def process_single_board(self,board_key,victor="NA"):
         with open(self.output_file, 'a', newline='') as csvfile:
                     writer = csv.writer(csvfile)
                     values = board_key.split(":")
                     moves = [values[0]]
                     fen = values[1]
-                    scores = self.evaluate_board(fen=fen)
+                    scores = self.evaluate_board(fen=fen,victor=victor)
                     row = moves + scores
                     writer.writerow(row)
     
+    def process_csv_boards(self,csv_file):
+        with open(self.output_file, 'a', newline='') as gameEvalfile:
+            writer = csv.writer(gameEvalfile)
+            with open(csv_file, 'r') as fenfile:
+                csv_reader = csv.reader(fenfile)
+                for row in csv_reader:
+                        if row == "":
+                             return 1
+                        try:
+                            victor = row[2]
+                            fen = row[1]
+                            moves = [row[0]]
+                            scores = self.evaluate_board(fen=fen,victor=victor)
+                            #row = [moves,scores]
+                            moves += scores
+                            writer.writerow(moves)
+                        except AttributeError:
+                            print(row) 
+                            raise Exception("here")
+
+
     def process_redis_boards(self):
         r = redis.Redis(host='localhost', port=6379)
         cursor = 0
@@ -64,5 +85,3 @@ class game_analyzer:
             writer = csv.writer(csvfile)
             writer.writerow(self.features)
 
-test = game_analyzer(player='w')
-test.process_single_board(board_key=Start_value)
