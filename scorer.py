@@ -15,9 +15,9 @@ class boardEval:
         results += self.number_of_moves()
         results += self.middle_square_attacks()
         results += [self.is_checkmate()]
-        results += [self.get_game_time()]
-        #for w/l
+                #for w/l
         results += [victor]
+        results += [self.get_game_time()]
         return results
 
     def middle_square_attacks(self):
@@ -44,7 +44,12 @@ class boardEval:
             opp_pieces = ['P','N','B','R','Q']
             pieces = ['p','n','b','r','q']
         for i in range(0,5):
-            results.append((fen.count(pieces[i])-fen.count(opp_pieces[i])))
+            divider = 10
+            if i == 0:
+                divider = 8
+            elif i == -1:
+                divider = 9
+            results.append(((fen.count(pieces[i])/divider)-(fen.count(opp_pieces[i]))/divider))
         return results
 
     def get_game_time(self):
@@ -54,11 +59,9 @@ class boardEval:
         count = count - board.count("/")
         for i in range(1,9):
             count = count - board.count(str(i))
-        value = 3
-        if (count/32) > (1/3):
-            value =  2
-        if (count/32) > (2/3):
-            value =  1
+        value = 1
+        if (count/32) > (1/2):
+            value =  0
         return (value)
 
     def is_checkmate(self):
@@ -89,3 +92,16 @@ class boardEval:
         if self.player == 'w':
             data = [black,white]
         return data
+    
+    def get_king_pressure(self):
+        return 0
+    
+    def get_opp_king_pressure(self):
+        return 0
+    
+    def get_king_xray(self):
+        
+        return 0
+    
+    def get_opp_king_xray(self):
+        return 0
