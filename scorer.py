@@ -8,17 +8,38 @@ class boardEval:
         self.board = chess.Board(fen=fen)
         self.player = player
 
+
     def get_board_scores(self,victor="NA"):
         if victor != "NA":
             self.player = victor
-        results = self.get_piece_amounts()
-        results += self.number_of_moves()
-        results += self.middle_square_attacks()
-        results += [self.is_checkmate()]
-                #for w/l
-        results += [victor]
-        results += [self.get_game_time()]
-        return results
+        
+        dict_results = {}
+        
+        piece_amounts = self.get_piece_amounts()
+        dict_results["pawns"] = piece_amounts[0]
+        dict_results["knights"] = piece_amounts[1]
+        dict_results["bishops"] = piece_amounts[2]
+        dict_results["rooks"] = piece_amounts[3]
+        dict_results["queens"] = piece_amounts[4]    
+        
+        moves = self.number_of_moves()
+        dict_results["my moves"] = moves[0]
+        dict_results["opp moves"] = moves[1]
+
+        middle_square_possesion = self.middle_square_attacks()
+        dict_results["e4 possesion"] = middle_square_possesion[0]
+        dict_results["e5 possesion"] = middle_square_possesion[1]
+        dict_results["d4 possesion"] = middle_square_possesion[2]
+        dict_results["d5 possesion"] = middle_square_possesion[3]
+        
+        time = self.get_game_time()
+        dict_results["Beginning Game"] = time[0]
+        dict_results["End Game"] = time[1]
+        
+        dict_results["checkmate"] = self.is_checkmate()
+        dict_results["w/b"] = victor
+
+        return dict_results
 
     def middle_square_attacks(self):
         middle_squares =[chess.E4,chess.E5,chess.D4,chess.D5]
@@ -57,12 +78,17 @@ class boardEval:
         board = self.fen_components[0]
         count = len(board)
         count = count - board.count("/")
+        bgame = 0
+        egame = 0
+
         for i in range(1,9):
             count = count - board.count(str(i))
         value = 1
-        if (count/32) > (1/2):
-            value =  0
-        return (value)
+        if (count) > (16):
+            bgame=1
+        else:
+            egame = 1
+        return ([bgame,egame])
 
     def is_checkmate(self):
         turn = self.fen.split(" ")[1]

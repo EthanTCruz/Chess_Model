@@ -10,8 +10,6 @@ Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP
 
 class game_analyzer:
     def __init__(self,player,output_file) -> None:
-        self.features = ["moves(id)","pawns","knights","bishops","rooks","queens","my moves","opp moves",
-                         "e4 possesion","e5 possesion","d4 possesion","d5 possesion","checkmate","w/b","game time"]
         self.output_file = output_file
         self.persist_data = False
         self.player = player
@@ -23,7 +21,7 @@ class game_analyzer:
                     values = board_key.split(":")
                     moves = [values[0]]
                     fen = values[1]
-                    scores = self.evaluate_board(fen=fen,victor=victor)
+                    scores = list(self.evaluate_board(fen=fen,victor=victor).values())
                     row = moves + scores
                     writer.writerow(row)
     
@@ -39,7 +37,8 @@ class game_analyzer:
                             victor = row[2]
                             fen = row[1]
                             moves = [row[0]]
-                            scores = self.evaluate_board(fen=fen,victor=victor)
+                            scores = list(self.evaluate_board(fen=fen,victor=victor).values())
+
                             #row = [moves,scores]
                             moves += scores
                             writer.writerow(moves)
@@ -62,7 +61,7 @@ class game_analyzer:
                     values = key.decode('utf-8').split(":")
                     moves = [values[0]]
                     fen = values[1]
-                    scores = self.evaluate_board(fen=fen)
+                    scores = list(self.evaluate_board(fen=fen).values())
                     row = moves + scores
                     writer.writerow(row)
                     r.delete(key)
@@ -84,5 +83,7 @@ class game_analyzer:
         # Create a new CSV file with the column headers
         with open(self.output_file, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(self.features)
+            scores = self.evaluate_board(fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+            features = ["moves(id)"] + list(scores.keys())
+            writer.writerow(features)
 

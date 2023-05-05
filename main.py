@@ -1,16 +1,17 @@
-import redis_populator
+from redis_populator import populator
 import game_analyzer
 import chess
 from pgn_processor import pgn_processor
 from nn_model import neural_net
 import os
+import cowsay
 
 scores_file = "data.csv"
 pgn_file = "Adams.pgn"
 games_csv_file = "games.csv"
 
 def main():
-    print("Start")
+    cowsay.cow("Start")
 
     if os.path.exists(scores_file):
         os.remove(scores_file)
@@ -21,11 +22,11 @@ def main():
     pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
         
     pgn_obj.pgn_fen_to_csv()
-    print("Converted pgn to csv")
+    cowsay.cow("Converted pgn to csv")
     gam_an_obj.process_csv_boards(csv_file=games_csv_file)
-    print("Evaluated csv boards")
+    cowsay.cow("Evaluated csv boards")
 
-    print("Create neural net")
+    cowsay.cow("Create neural net")
     nn = neural_net(filename=scores_file,target_feature='w/b',test_size=0.3)
     nn.create_and_evaluate_model()
     

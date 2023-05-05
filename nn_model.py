@@ -25,7 +25,7 @@ class neural_net():
         # Encode the target variable (w/b) as 0 or 1
         self.data[self.target_feature] = self.data[self.target_feature].apply(lambda x: 1 if x == 'w' else 0)
         # One-hot encode the 'game time' feature
-        self.data = pd.get_dummies(self.data, columns=['game time'], prefix='game_time')
+
         # Split the data into features and target
         X = self.data.drop(columns=[self.target_feature])
         Y = self.data[self.target_feature]
@@ -63,3 +63,26 @@ class neural_net():
         print("Test loss:", loss)
         print("Test accuracy:", accuracy)
         return model
+    
+
+#implement following code later to save models
+'''
+checkpoint_path = "training_1/cp.ckpt"
+checkpoint_dir = os.path.dirname(checkpoint_path)
+
+# Create a callback that saves the model's weights
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                 save_weights_only=True,
+                                                 verbose=1)
+
+# Train the model with the new callback
+model.fit(train_images, 
+          train_labels,  
+          epochs=10,
+          validation_data=(test_images, test_labels),
+          callbacks=[cp_callback])  # Pass callback to training
+
+# This may generate warnings related to saving the state of the optimizer.
+# These warnings (and similar warnings throughout this notebook)
+# are in place to discourage outdated usage, and can be ignored.
+'''
