@@ -15,7 +15,7 @@ Features to add:
 binary: has bishop pair (opp,player)
 
 Todo:
-Switch from using redis to using csv
-Craft tree and prune losing moves from it
-Score leaves
-Craft algorithim for tree traversal to select moves based on opponent choosing best move for themself
+Craft algorithim for move scoring
+Create function in main for creating and training and model and one for using it
+(Idea) Create auto factor analysis of features added based on values in some file
+Add space advantage feature using coordinates of pawns and distance from respective sides, also check for chains based on attackers of same type and whether or not they are pawns

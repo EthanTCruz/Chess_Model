@@ -10,10 +10,11 @@ import os
 
 class neural_net():
 
-    def __init__(self,filename,ModelFilePath="./",ModelFilename="chess_model",target_feature = "w/b",test_size=.2,random_state=42,player = "NA",predictions_board='predictions.csv',epochs=100) -> None:
+    def __init__(self,filename,ModelFilePath="./",ModelFilename="chess_model",target_feature = "w/b",test_size=.2,random_state=42,player = "NA",predictions_board='predictions.csv',epochs=100,redis_client=redis.Redis(host='localhost', port=6379)) -> None:
         self.epochs = epochs
         self.target_feature = target_feature
         self.predictions_board = predictions_board
+        self.r = redis_client
         self.filename = filename
         self.test_size=test_size
         self.random_state = random_state
@@ -119,8 +120,16 @@ class neural_net():
 
         prediction = float(model.predict(X))
 
-        return(prediction)        
+        return(prediction)
 
+    def pick_next_move(self):
+        data = self.process_redis_boards()
+        self.r.flushall()
+        for i in range(0,len(data)-1):
+            moves = data[i]
+            score = float(data['predictions'][i])
+            self.r.set(moves,score)                
+        print("done")
 
 
 

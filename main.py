@@ -42,8 +42,7 @@ def main():
     cowsay.cow("making predictions")
     nn = neural_net(filename=scores_file,target_feature='w/b',test_size=0.3,ModelFilename=ModelFilename,ModelFilePath=ModelFilePath,player = 'w',predictions_board=predictions_board,epochs=10)
     nn.create_and_evaluate_model()
-    test = nn.process_redis_boards()
-    print(test)
+    nn.pick_next_move()
     print("Finish")
  
 
