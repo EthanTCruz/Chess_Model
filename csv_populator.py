@@ -39,20 +39,14 @@ class populator():
             try:
                 board.push_uci(move)
                 if len(board.move_stack) > self.DEPTH:
-                    #undefined - game is still going
-                    value = "u"
+                    #implement nn here
+                    value = "undefined"
 
                     if board.is_checkmate():
-                        #black win
-                        value = "b"
-                        if board.turn:
-                            #white win
-                            value = "w"
-                    
+                        value = "checkmate"
                     if board.is_stalemate():
-                        #stalemate
-                        value = "s"
-                    self.r.set(f'{str([move.uci() for move in board.move_stack])}:{ board.fen()}',value)
+                        value = "stalemate"
+                    self.r.set(f'{str([move.uci() for move in board.move_stack])}:{ board.fen()}',"undefined")
                 else:
                     legal_moves = self.get_legal_moves(board)
                     if legal_moves:

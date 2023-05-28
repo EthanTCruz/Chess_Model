@@ -6,3 +6,8 @@
 data.csv
 __pycache__/
 games.csv
+./chess_model/
+/chess_model/
+./chess_model
+chess_model/
+chess_model

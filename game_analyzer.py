@@ -9,11 +9,11 @@ import scorer
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 
 class game_analyzer:
-    def __init__(self,player,output_file) -> None:
+    def __init__(self,output_file,player="NA",persist_data=False) -> None:
         self.output_file = output_file
-        self.persist_data = False
+        self.persist_data = persist_data
         self.player = player
-        self.create_csv()
+
 
     def process_single_board(self,board_key,victor="NA"):
         with open(self.output_file, 'a', newline='') as csvfile:
@@ -26,6 +26,7 @@ class game_analyzer:
                     writer.writerow(row)
     
     def process_csv_boards(self,csv_file):
+        self.create_csv()
         with open(self.output_file, 'a', newline='') as gameEvalfile:
             writer = csv.writer(gameEvalfile)
             with open(csv_file, 'r') as fenfile:
@@ -48,6 +49,18 @@ class game_analyzer:
 
 
     def process_redis_boards(self):
+        if os.path.exists(self.output_file):
+            first_line = ''
+            with open(self.output_file, 'r') as csv_file:
+                reader = csv.reader(csv_file)
+                first_line = next(reader)
+
+            os.remove(self.output_file)
+
+            with open(self.output_file, 'w') as csv_file:
+                writer = csv.writer(csv_file)
+                writer.writerow(first_line)
+
         r = redis.Redis(host='localhost', port=6379)
         cursor = 0
         count = 10
@@ -61,15 +74,22 @@ class game_analyzer:
                     values = key.decode('utf-8').split(":")
                     moves = [values[0]]
                     fen = values[1]
-                    scores = list(self.evaluate_board(fen=fen).values())
-                    row = moves + scores
+                    scores = self.evaluate_board(fen=fen).values()
+                    if r.get(key) == 'b':
+                         scores["w/b"] = 'b'
+                    elif r.get(key) == 'w':
+                        scores["w/b"] = 'w'     
+                    row = moves + list(scores)
                     writer.writerow(row)
                     r.delete(key)
 
 
                 # Break the loop if the cursor returns to the start
                 if cursor == 0:
-                    break
+                     break
+
+
+
 
     def evaluate_board(self,fen,victor="NA"):
         evaluator = scorer.boardEval(fen=fen,player=self.player)
@@ -83,7 +103,7 @@ class game_analyzer:
         # Create a new CSV file with the column headers
         with open(self.output_file, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            scores = self.evaluate_board(fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-            features = ["moves(id)"] + list(scores.keys())
+            scorer_obj = scorer.boardEval()
+            features = scorer_obj.get_features()
             writer.writerow(features)
 

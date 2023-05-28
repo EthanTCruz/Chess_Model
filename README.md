@@ -7,6 +7,10 @@ Adams.pgn:
 Test loss: 0.47839900851249695
 Test accuracy: 0.7689734101295471
 
+5/5/23
+Test loss: 0.4322868287563324
+Test accuracy: 0.8030847311019897
+
 Features to add:
 binary: has bishop pair (opp,player)
 
