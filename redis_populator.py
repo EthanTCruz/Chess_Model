@@ -38,7 +38,7 @@ class populator():
         for move in moves:
             try:
                 board.push_uci(move)
-                if len(board.move_stack) > self.DEPTH:
+                if len(board.move_stack) > self.DEPTH -1:
                     #undefined - game is still going
                     value = "u"
 

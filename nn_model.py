@@ -129,7 +129,7 @@ class neural_net():
             moves = data[i]
             score = float(data['predictions'][i])
             self.r.set(moves,score)                
-        print("done")
+        return 0
 
 
 

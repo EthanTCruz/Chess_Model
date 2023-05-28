@@ -11,11 +11,15 @@ Test accuracy: 0.7689734101295471
 Test loss: 0.4322868287563324
 Test accuracy: 0.8030847311019897
 
+5/28/23
+Test loss: 0.4277477264404297
+Test accuracy: 0.811082124710083
+
 Features to add:
-binary: has bishop pair (opp,player)
+Add space advantage feature using coordinates of pawns and distance from respective sides, also check for chains based on attackers of same type and whether or not they are pawns
 
 Todo:
 Craft algorithim for move scoring
 Create function in main for creating and training and model and one for using it
 (Idea) Create auto factor analysis of features added based on values in some file
-Add space advantage feature using coordinates of pawns and distance from respective sides, also check for chains based on attackers of same type and whether or not they are pawns
+Still have to evaluate use case of when checkmate is within depth of moves or less
