@@ -18,10 +18,18 @@ nn = neural_net(filename=scores_file,target_feature='w/b',test_size=0.3,
 persist_model = True
 
 def main():
+    pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
+
+    cowsay.cow(f"Converting pgn file to csv: {games_csv_file}")    
+    pgn_obj.pgn_fen_to_csv()
+    use_model()
+    #train_and_test_model()
+    '''
     if not (persist_model):
         train_and_test_model()
     use_model()
- 
+    '''
+
 
 
 
@@ -53,17 +61,16 @@ def train_and_test_model():
     #nn.score_board(board_key="['g1h3', 'h7h5', 'h3g1']:rnbqkbnr/ppppppp1/8/7p/8/8/PPPPPPPP/RNBQKBNR b KQkq - 1 2")
     return 0
 
-def use_model(fen=None):
+def use_model(board: chess.Board = chess.Board()):
     
     cowsay.cow("processing redis boards")
-    board = chess.Board()
-    if fen is not None:
-        board = chess.Board(fen=fen)
+
     red_obj = populator(depth=2,board=board)
     red_obj.reset_and_fill_redis()
     cowsay.cow("making predictions")
     
-    nn.pick_next_move()
+    move = nn.pick_next_move(board)
+    print(move)
     print("Finish")
     return 0
 

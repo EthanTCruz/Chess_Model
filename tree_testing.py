@@ -1,47 +1,52 @@
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-import matplotlib.pyplot as plt
-from sklearn.tree import plot_tree
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
+class TreeNode:
+    def __init__(self, data):
+        self.data = data
+        self.children = []
+        self.parent = None
 
+    def get_level(self):
+        level = 0
+        p = self.parent
+        while p:
+            level += 1
+            p = p.parent
 
-# Create a hypothetical dataset with categorical features
-data = pd.DataFrame({
-    'color': ['red', 'blue', 'green', 'blue', 'red', 'green'],
-    'shape': ['circle', 'square', 'circle', 'circle', 'square', 'circle'],
-    'label': ['A', 'B', 'A', 'A', 'B', 'A']
-})
+        return level
 
-# Use LabelEncoder to convert categorical features to numerical values
-color_encoder = LabelEncoder()
-shape_encoder = LabelEncoder()
+    def print_tree(self):
+        spaces = ' ' * self.get_level() * 3
+        prefix = spaces + "|__" if self.parent else ""
+        print(prefix + self.data)
+        if self.children:
+            for child in self.children:
+                child.print_tree()
 
-data['color_encoded'] = color_encoder.fit_transform(data['color'])
-data['shape_encoded'] = shape_encoder.fit_transform(data['shape'])
+    def add_child(self, child):
+        child.parent = self
+        self.children.append(child)
 
-# Split the dataset into features (X) and target (y)
-X = data[['color_encoded', 'shape_encoded']]
-y = data['label']
+def build_product_tree():
+    root = TreeNode("Electronics")
 
+    laptop = TreeNode("Laptop")
+    laptop.add_child(TreeNode("Mac"))
+    laptop.add_child(TreeNode("Surface"))
+    laptop.add_child(TreeNode("Thinkpad"))
 
+    cellphone = TreeNode("Cell Phone")
+    cellphone.add_child(TreeNode("iPhone"))
+    cellphone.add_child(TreeNode("Google Pixel"))
+    cellphone.add_child(TreeNode("Vivo"))
 
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    tv = TreeNode("TV")
+    tv.add_child(TreeNode("Samsung"))
+    tv.add_child(TreeNode("LG"))
 
-# Train the decision tree model
-model = DecisionTreeClassifier()
-model.fit(X_train, y_train)
+    root.add_child(laptop)
+    root.add_child(cellphone)
+    root.add_child(tv)
 
+    root.print_tree()
 
-# Make predictions on the testing set
-y_pred = model.predict(X_test)
-
-# Print the predictions
-print("Predictions:", y_pred)
-
-
-# Assuming the decision tree model has been trained and is named 'model'
-plt.figure(figsize=(12, 8))
-plot_tree(model, filled=True, feature_names=['color_encoded', 'shape_encoded'], class_names=['A', 'B','C','D'])
-plt.show()
+if __name__ == '__main__':
+    build_product_tree()

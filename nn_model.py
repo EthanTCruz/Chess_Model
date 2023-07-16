@@ -7,6 +7,8 @@ import numpy as np
 from redis_populator import populator
 import redis
 import os
+import chess
+
 
 class neural_net():
 
@@ -27,7 +29,27 @@ class neural_net():
     def clean_data(self,data):
         # Remove the moves column, as it's not a useful feature for the neural network
         data = data.drop(columns=['moves(id)'])
+        b_count = data[data['w/b'] == 'b'].shape[0]
+        w_count = data[data['w/b'] == 'w'].shape[0]
 
+        # calculate number of 'w' rows to keep (which is 3/4 of 'w' count or 'b' count whichever is lower)
+        w_keep = min(int(w_count * 0.75), b_count)
+
+        # get indices of 'w' rows
+        w_indices = data[data['w/b'] == 'w'].index
+
+        # choose random subset of 'w' indices to keep
+        w_indices_keep = np.random.choice(w_indices, w_keep, replace=False)
+
+        # get all 'b' indices
+        b_indices = data[data['w/b'] == 'b'].index
+
+        # combine 'w' indices to keep and all 'b' indices
+        new_indices = np.concatenate([w_indices_keep, b_indices])
+
+        # filter dataframe to these indices
+        data = data.loc[new_indices]
+                
         # Encode the target variable (w/b) as 0 or 1
         data[self.target_feature] = data[self.target_feature].apply(lambda x: 1 if x == 'w' else 0)
         # One-hot encode the 'game time' feature
@@ -112,6 +134,7 @@ class neural_net():
         self.game_analyzer_obj.process_single_board(board_key=board_key)
         
         data = pd.read_csv(self.filename)
+
         X,Y = self.clean_data(data=data)
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
@@ -122,14 +145,53 @@ class neural_net():
 
         return(prediction)
 
-    def pick_next_move(self):
+    def get_legal_moves(self,board: chess.Board):
+        legal_moves =  [move.uci() for move in board.legal_moves]
+        return(legal_moves)
+        
+
+    def evaluate_redis(self,board: chess.Board):
+        legal_moves = self.get_legal_moves(board=board)
+        # legal moves does not seem to be matchin what is in redis, find out why!!!
+        #list should have move, mean,stdv
+        move_stats = {}
+        for move in legal_moves:
+            move_scores = []
+            cursor = '0'
+            while cursor != 0:
+                temp = f"'{move}'"
+                match_value = "\\["+temp+"*"
+                cursor, data = self.r.scan(cursor=cursor, match=match_value)
+
+                for key in data:
+                    # Fetch the value from the key
+                    value = self.r.get(key)
+                    move_scores.append(float(value))
+                    # Check if the value matches your criteria
+                    if value == 'your_desired_value':
+                        print(f'Key: {key} - Value: {value}')
+            mean = np.mean(move_scores)
+            stdv = np.std(move_scores)
+            move_stats[move] = [mean,stdv]
+        return move_stats
+
+    def pick_next_move(self,board: chess.Board):
         data = self.process_redis_boards()
         self.r.flushall()
         for i in range(0,len(data)-1):
             moves = data[i]
             score = float(data['predictions'][i])
-            self.r.set(moves,score)                
-        return 0
+            self.r.set(moves,score)
+        move_stats = self.evaluate_redis(board)
+        best_move = ''
+        highest = ['move',0]
+
+        for key in move_stats:
+            score = move_stats[key][0] - move_stats[key][1]
+            if score > highest[1]:
+                highest[1] = score
+                highest[0] = key
+        return highest
 
 
 

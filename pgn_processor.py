@@ -10,6 +10,7 @@ class pgn_processor():
 
     def pgn_fen_to_csv(self,victor="NA"):
         pgn = open(self.pgn_file)
+        
         with open(self.csv_file, 'a', newline='') as csvfile:
                     writer = csv.writer(csvfile)
                     while True:
