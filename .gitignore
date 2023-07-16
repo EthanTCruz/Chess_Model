@@ -3,8 +3,12 @@
 /env
 ./env
 ./__pycache__/
+/__pycache__/
+__pycache__
+./data.csv
 data.csv
 __pycache__/
+./games.csv
 games.csv
 ./chess_model/
 /chess_model/

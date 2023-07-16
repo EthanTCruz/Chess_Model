@@ -5,6 +5,7 @@ import csv
 import os
 import ast
 import scorer
+from tqdm import tqdm
 
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 
@@ -27,11 +28,16 @@ class game_analyzer:
     
     def process_csv_boards(self,csv_file):
         self.create_csv()
+        with open(csv_file) as f:
+            total_lines = sum(1 for line in f)
         with open(self.output_file, 'a', newline='') as gameEvalfile:
             writer = csv.writer(gameEvalfile)
+            # find total number of lines in the file
+
+
             with open(csv_file, 'r') as fenfile:
                 csv_reader = csv.reader(fenfile)
-                for row in csv_reader:
+                for row in tqdm(csv_reader, total=total_lines):
                         if row == "":
                              return 1
                         try:
@@ -43,9 +49,11 @@ class game_analyzer:
                             #row = [moves,scores]
                             moves += scores
                             writer.writerow(moves)
+                            pass
                         except AttributeError:
                             print(row) 
                             raise Exception("here")
+
 
 
     def process_redis_boards(self):

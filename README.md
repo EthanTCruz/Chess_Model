@@ -23,3 +23,5 @@ Craft algorithim for move scoring
 Create function in main for creating and training and model and one for using it
 (Idea) Create auto factor analysis of features added based on values in some file
 Still have to evaluate use case of when checkmate is within depth of moves or less
+
+Notes:
