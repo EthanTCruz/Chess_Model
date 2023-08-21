@@ -10,12 +10,12 @@ import os
 import chess
 
 
-class neural_net():
+class principal_component_analysis():
 
     def __init__(self,**kwargs) -> None:
         self.set_parameters(kwargs=kwargs)
 
-    def set_parameters(self,kwargs):
+    def set_parameters(self,**kwargs):
 
         if "epochs" not in kwargs:
             self.epochs=100
@@ -32,15 +32,10 @@ class neural_net():
         else:
             self.predictions_board = kwargs["predictions_board"]
 
-        if "redis_score_db" not in kwargs:
-            self.r_score = redis.Redis(host='localhost', port=6379,db = 1)
+        if "redis_client" not in kwargs:
+            self.r = redis.Redis(host='localhost', port=6379)
         else:
-            self.r_score = kwargs["redis_score_db"]
-
-        if "redis_mate_db" not in kwargs:
-            self.r_mate = redis.Redis(host='localhost', port=6379,db = 2)
-        else:
-            self.r_mate = kwargs["redis_mate_db"]
+            self.r = kwargs["redis_client"]
         
         if "ModelFilePath" or "ModelFilename" not in kwargs:
             ModelFilePath="./"
@@ -53,15 +48,11 @@ class neural_net():
             self.filename = "data.csv"
         else:
             self.filename = kwargs["filename"]
-        
 
-        player=""
         if "player" not in kwargs:
-            player = "NA"
+            self.game_analyzer_obj = game_analyzer(output_file=self.filename,player="NA")
         else:
-            player = kwargs["player"]
-        self.game_analyzer_obj = game_analyzer(output_file=self.filename,player=player,
-                                               redis_score_db=self.r_score)
+            self.game_analyzer_obj = game_analyzer(output_file=self.filename,player=kwargs["player"])
 
         if "test_size" not in kwargs:
             self.test_size=.2
@@ -212,20 +203,15 @@ class neural_net():
         data['predictions'] = model.predict(X)
         checkmates['predictions'] = checkmates.loc[:,'checkmate']
         data = pd.concat([data,checkmates])
-        #error: should fix to be specific db
-        self.r_score.flushall()
+        self.r.flushdb()
         for index, row in data.iterrows():
             move = row['moves(id)']
             score = float(row['predictions'])
-            mate_score = 0
-            if abs(row['predictions']) == 1:
-                mate_score = int(row['predictions'])
-            self.r_mate.set(move,mate_score)
-            self.r_score.set(move,score)
+            self.r.set(move,score)
         # for i in range(0,len(moves)-1):
         #         move = moves[i]
         #         score = float(data['predictions'][i])
-        #         self.r_score.set(move,score)
+        #         self.r.set(move,score)
 
 
 

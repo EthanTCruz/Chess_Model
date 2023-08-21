@@ -25,3 +25,7 @@ Create function in main for creating and training and model and one for using it
 Still have to evaluate use case of when checkmate is within depth of moves or less
 
 Notes:
+For scalability in the future, add a machine id to the redis keys for moves uploaded by specific instances
+
+Future optomizations:
+Use redis pipeline for mass key readings and uploads
