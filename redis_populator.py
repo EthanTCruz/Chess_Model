@@ -1,6 +1,7 @@
 import chess
 import redis
 import hiredis
+from config import Settings
 
 
 
@@ -13,10 +14,15 @@ class populator():
         self.set_parameters(kwargs=kwargs)
 
     def set_parameters(self,kwargs):
-        if "depth" not in kwargs:
-            self.DEPTH=2
+        s = Settings()
+        if "score_depth" not in kwargs:
+            self.score_depth=2
         else:
-            self.DEPTH = kwargs["depth"]
+            self.score_depth = kwargs["score_depth"]
+        if "mate_depth" not in kwargs:
+            self.mate_depth=3
+        else:
+            self.mate_depth = kwargs["mate_depth"]        
 
         if "board" not in kwargs:
             raise Exception("Need initial baord")
@@ -35,17 +41,17 @@ class populator():
         if "redis_score_db" not in kwargs:
             self.r_score = redis.Redis(host='localhost', port=6379,db=1)
         else:
-            self.r_score = kwargs["redis_score_db"]
+            self.r_score = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_score_db))
         
         if "redis_mate_db" not in kwargs:
             self.r_mate = redis.Redis(host='localhost', port=6379,db=2)
         else:
-            self.r_mate = kwargs["redis_score_db"]
+            self.r_mate = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_mate_db))
 
 
 
     def reset_and_fill_redis(self):
-        self.r_score.flushdb()
+        self.r_score.flushall()
         self.populate_redis(board=self.board,moves=self.get_legal_moves(board=self.board))
 
 
@@ -71,16 +77,19 @@ class populator():
                     if board.turn:
                         #white win
                         value = "b"
-                    self.r_score.set(f'{str([move.uci() for move in board.move_stack[initial_movestack_length:]])}:{ board.fen()}',value)  
+                    self.r_score.set(f'{str([move.uci() for move in board.move_stack[initial_movestack_length:]])}:{ board.fen()}',value)
+                    self.r_mate.set(f'{str([move.uci() for move in board.move_stack[initial_movestack_length:]])}:{ board.fen()}',value)   
 
                 if board.is_stalemate():
                     #stalemate
                     value = "s"
-                    self.r_score.set(f'{str([move.uci() for move in board.move_stack[(-self.DEPTH):]])}:{ board.fen()}',value)
-
-                if (len(board.move_stack) - initial_movestack_length) > self.DEPTH -1 :
-                    self.r_score.set(f'{str([move.uci() for move in board.move_stack[(-self.DEPTH):]])}:{ board.fen()}',value)
-                
+                    self.r_score.set(f'{str([move.uci() for move in board.move_stack[(-self.score_depth):]])}:{ board.fen()}',value)
+                    self.r_mate.set(f'{str([move.uci() for move in board.move_stack[(-self.mate_depth):]])}:{ board.fen()}',value)
+                current_depth = (len(board.move_stack) - initial_movestack_length)
+                if current_depth > self.score_depth -1 and current_depth < self.mate_depth:
+                        self.r_score.set(f'{str([move.uci() for move in board.move_stack[(-self.score_depth):]])}:{ board.fen()}',value)
+                if current_depth > self.mate_depth -1 :
+                    self.r_mate.set(f'{str([move.uci() for move in board.move_stack[(-self.mate_depth):]])}:{ board.fen()}',value)               
                 else:
                     legal_moves = self.get_legal_moves(board)
                     if legal_moves:

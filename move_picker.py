@@ -8,6 +8,7 @@ from redis_populator import populator
 import redis
 import os
 import chess
+from config import Settings
 
 class move_picker():
 
@@ -15,10 +16,11 @@ class move_picker():
         self.set_parameters(kwargs=kwargs)
 
     def set_parameters(self,kwargs):
+        s = Settings()
         if "redis_score_db" not in kwargs:
             self.r_score = redis.Redis(host='localhost', port=6379,db=1)
         else:
-            self.r_score = kwargs["redis_score_db"]
+            self.r_score = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_score_db))
 
     def get_legal_moves(self,board: chess.Board):
         legal_moves =  [move.uci() for move in board.legal_moves]

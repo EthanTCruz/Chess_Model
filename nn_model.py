@@ -8,6 +8,7 @@ from redis_populator import populator
 import redis
 import os
 import chess
+from config import Settings
 
 
 class neural_net():
@@ -16,7 +17,7 @@ class neural_net():
         self.set_parameters(kwargs=kwargs)
 
     def set_parameters(self,kwargs):
-
+        s = Settings()
         if "epochs" not in kwargs:
             self.epochs=100
         else:
@@ -33,14 +34,14 @@ class neural_net():
             self.predictions_board = kwargs["predictions_board"]
 
         if "redis_score_db" not in kwargs:
-            self.r_score = redis.Redis(host='localhost', port=6379,db = 1)
+            raise Exception("No redis score db connections were supplied")
         else:
-            self.r_score = kwargs["redis_score_db"]
+            self.r_score = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_score_db))
 
         if "redis_mate_db" not in kwargs:
-            self.r_mate = redis.Redis(host='localhost', port=6379,db = 2)
+            raise Exception("No redis mate db connections were supplied")
         else:
-            self.r_mate = kwargs["redis_mate_db"]
+            self.r_mate = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_mate_db))
         
         if "ModelFilePath" or "ModelFilename" not in kwargs:
             ModelFilePath="./"
