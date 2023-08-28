@@ -8,16 +8,19 @@ import cowsay
 from move_picker import move_picker
 import redis
 import hiredis
-
-ModelFilePath="./"
-ModelFilename="chess_model"
-scores_file = "./data/data.csv"
-pgn_file = "./pgn/Adams.pgn"
-games_csv_file = "./data/games.csv"
-predictions_board = './data/predictions.csv'
-redis_score_db = redis.Redis(host='localhost', port=6379,db=1)
-redis_mate_db = redis.Redis(host='localhost', port=6379,db=2)
-persist_model = True
+from config import Settings
+s = Settings()
+ModelFilePath=s.ModelFilePath
+ModelFilename=s.ModelFilename
+scores_file = s.scores_file
+pgn_file = s.pgn_file
+games_csv_file = s.games_csv_file
+predictions_board = s.predictions_board
+redis_score_db = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_score_db))
+redis_mate_db = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_mate_db))
+persist_model = s.persist_model
+score_depth = s.score_depth
+mate_depth = s.mate_depth
 
 nn = neural_net(filename=scores_file,target_feature='w/b',
                 test_size=0.3,ModelFilename = ModelFilename,
@@ -86,7 +89,7 @@ def use_model(board: chess.Board = chess.Board()):
     cowsay.cow("processing redis boards")
 
 
-    red_obj = populator(depth=2,board=board,
+    red_obj = populator(depth=score_depth,mate_depth=mate_depth,board=board,
                         redis_score_db=redis_score_db,redis_mate_db=redis_mate_db)
     red_obj.reset_and_fill_redis()
     #keys after this point: "['c4b5', 'h7h6']:r1bqkb1r/pppp1pp1/2n2n1p/1B2p2Q/4P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 5"

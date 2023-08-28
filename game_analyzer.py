@@ -6,6 +6,7 @@ import os
 import ast
 import scorer
 from tqdm import tqdm
+from config import Settings
 
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 
@@ -14,6 +15,7 @@ class game_analyzer:
         self.set_parameters(kwargs=kwargs)
 
     def set_parameters(self,kwargs):
+        s = Settings()
         if "output_file" not in kwargs:
             self.output_file="./data/data.csv"
         else:
@@ -33,7 +35,8 @@ class game_analyzer:
         if "redis_score_db" not in kwargs:
             self.r_score = redis.Redis(host='localhost', port=6379,db=1)
         else:
-            self.r_score = kwargs["redis_score_db"]
+            self.r_score = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_score_db))
+
 
 
 
