@@ -235,85 +235,58 @@ class move_picker():
                     break
 
 
-    def compress(self,evenMode = True):
-        evalValues = [1,1,0,0,1]
-        if evenMode:
-            evalValues = [0,1,1,1,0]
-        cursor = 0
-        count = 1000
-        continueEval = True
-        while continueEval:
-            # Scan the Redis database using the cursor
-            cursor, keys = self.r_mate.scan(cursor=cursor, count=count)
-            # Print the retrieved keys
-            for key in keys:
-                moves = ast.literal_eval(key)
-                if (len(moves) % 2 == evalValues[0])  and (len(moves) > evalValues[1]):
-                    if str(self.r_mate.get(key)) == str(evalValues[2]):
-
-                            self.compress_branch_to_value(branch=key,score=evalValues[3])
-                            continueEval = False
-                            break
-                if cursor == 0:
-                        miniEval = True
-                        while miniEval:
-                            cursor, keys = self.r_mate.scan(cursor=cursor, count=count)
-                            for key in keys:
-                                moves = ast.literal_eval(key)
-                                if (len(moves) % 2 == 0)  and (len(moves) > 1):
-                                    if str(self.r_mate.get(key)) == str(0):
-                                        match_value = str(moves[:-1])
-                                        if self.r_mate.exists(match_value) != 1:
-                                            self.compress_branch_to_value(branch=key,score=0)
-                                    else:
-                                        if len(moves) == 2:
-                                            self.r_mate.delete(key)
-                                            #self.r_mate.set(key[:-1])
-                                            pass
-                                        elif len(moves) != 1:
-                                            self.r_mate.delete(key)
-                                elif (len(moves) % 2 == 1)  and (len(moves) > 1):
-                                    if str(self.r_mate.get(key)) == str(1):
-                                        match_value = str(moves[:-1])
-                                        if self.r_mate.exists(match_value) != 1:
-                                            self.compress_branch_to_value(branch=key,score=1)
-                                    else:
-                                        if len(moves) == 2:
-                                            pass
-                                        elif len(moves) != 1:
-                                            self.r_mate.delete(key)
-                                else:
-                                    pass
-                            if cursor == 0:
-                                miniEval = False
-                                continueEval = False
-                                break
-
-            # Break the loop if the cursor returns to the start
-            if cursor == 0:
-                continueEval = False
-                break
-
     def find_forced_wins(self,board: chess.Board):
         board = chess.Board(fen=board.fen())
         initial_moves = self.get_legal_moves(board=board)
         while True:
-            if (len(initial_moves) >= (self.r_mate.dbsize())):
+            if (len(initial_moves) == (self.r_mate.dbsize())):
                 for key in self.r_mate.keys():
-                    moves = ast.literal_eval(key)
-                    if len(moves) == 2:
-                        self.compress(evenMode=True)
-
                     if self.r_mate.get(key) == '1':
                         return key
                 return 0
             else:
-                self.compress(evenMode=True)
                 self.compress(evenMode=False)
+                self.compress(evenMode=True)
 
 
+    def compress(self,evenMode = True):
+        eval = {}
+        #value for evaluating whether even or odd
+        eval['parity'] = 1
+        #value searching for in branch
+        eval['success'] = ["1"]
+        #default value for if no success found
+        eval['fail'] = 0
 
+        if evenMode:
+            #value for evaluating whether even or odd
+            eval['parity'] = 0
+            #value searching for in branch
+            eval['success'] = [0,0.5,'u']
+            #default value for if no success found
+            eval['fail'] = 1
 
+        cursor = 0
+        count = 1000
+        continueEval = True
+        while continueEval:
+
+            # Scan the Redis database using the cursor
+            cursor, keys = self.r_mate.scan(cursor=cursor, count=count)
+            for key in keys:
+                moves = ast.literal_eval(key)
+                if len(moves) == 1:
+                    pass
+                #condition for if key is of correct parity
+                elif (len(moves) % 2 == eval['parity']):
+                    if str(self.r_mate.get(key)) in  map(str, eval['success']):
+                            self.compress_branch_to_value(branch=key,score=eval['success'][0])
+                else:
+                    if self.r_mate.exists(key):
+                        self.compress_branch_to_value(branch=key,score=eval['fail'])
+            if cursor == 0:
+                continueEval = False
+                break
 
 
 
