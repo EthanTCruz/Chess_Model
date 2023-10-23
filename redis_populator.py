@@ -77,19 +77,26 @@ class populator():
                     if board.turn:
                         #white win
                         value = "b"
-                    self.r_score.set(f'{str([move.uci() for move in board.move_stack[initial_movestack_length:]])}:{ board.fen()}',value)
-                    self.r_mate.set(f'{str([move.uci() for move in board.move_stack[initial_movestack_length:]])}:{ board.fen()}',value)   
-
+                    move_list = [move.uci() for move in board.move_stack[initial_movestack_length:]]
+                    self.r_score.set(f'{str(move_list)}:{ board.fen()}',value)
+                    #basing off model will only be run on my turn, and 0 signifies losing checkmate
+                    value = 1
+                    self.r_mate.set(f'{str(move_list)}',value)
+   
+                score_move_list = [move.uci() for move in board.move_stack[(-self.score_depth):]]
+                mate_move_list = [move.uci() for move in board.move_stack[(-self.mate_depth):]]
                 if board.is_stalemate():
                     #stalemate
                     value = "s"
-                    self.r_score.set(f'{str([move.uci() for move in board.move_stack[(-self.score_depth):]])}:{ board.fen()}',value)
-                    self.r_mate.set(f'{str([move.uci() for move in board.move_stack[(-self.mate_depth):]])}:{ board.fen()}',value)
+                    self.r_score.set(f'{str(score_move_list)}:{ board.fen()}',value)
+
+                    #auto sets values for stalemate to 0.5
+                    self.r_mate.set(f'{str(mate_move_list)}',0.5)
                 current_depth = (len(board.move_stack) - initial_movestack_length)
                 if current_depth > self.score_depth -1 and current_depth < self.mate_depth:
-                        self.r_score.set(f'{str([move.uci() for move in board.move_stack[(-self.score_depth):]])}:{ board.fen()}',value)
+                        self.r_score.set(f'{str(score_move_list)}:{ board.fen()}',value)
                 if current_depth > self.mate_depth -1 :
-                    self.r_mate.set(f'{str([move.uci() for move in board.move_stack[(-self.mate_depth):]])}:{ board.fen()}',value)               
+                    self.r_mate.set(f'{str(mate_move_list)}',value)               
                 else:
                     legal_moves = self.get_legal_moves(board)
                     if legal_moves:

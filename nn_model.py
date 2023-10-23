@@ -214,14 +214,14 @@ class neural_net():
         checkmates['predictions'] = checkmates.loc[:,'checkmate']
         data = pd.concat([data,checkmates])
         #error: should fix to be specific db
-        self.r_score.flushall()
+        self.r_score.flushdb()
         for index, row in data.iterrows():
             move = row['moves(id)']
             score = float(row['predictions'])
             mate_score = 0
-            if abs(row['predictions']) == 1:
-                mate_score = int(row['predictions'])
-            self.r_mate.set(move,mate_score)
+            if abs(row['checkmate']) == 1:
+                mate_score = int(row['checkmate'])
+            #self.r_mate.set(move,mate_score)
             self.r_score.set(move,score)
         # for i in range(0,len(moves)-1):
         #         move = moves[i]
