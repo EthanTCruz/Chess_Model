@@ -30,7 +30,8 @@ nn = neural_net(filename=scores_file,target_feature='w/b',
 
 
 
-mp = move_picker(redis_score_db=redis_score_db)
+mp = move_picker(redis_score_db=redis_score_db,redis_mate_db=redis_mate_db,
+                 player='w',mate_depth = mate_depth)
 
 
 
@@ -38,14 +39,7 @@ mp = move_picker(redis_score_db=redis_score_db)
 
 def main():
     
-    board = chess.Board()
-    board.push_san("e4")
-    board.push_san("e5")
-    board.push_san("Bc4")
-    board.push_san("Nc6")
-    board.push_san("Qh5")
-    board.push_san("Nf6")
-    use_model(board=board)
+    test_scholar_mate()
     #train_and_test_model()
     '''
     if not (persist_model):
@@ -53,7 +47,22 @@ def main():
     use_model()
     '''
 
+def test_scholar_mate():
+    board = chess.Board()
+    board.push_san("e4")
+    board.push_san("e5")
+    board.push_san("Bc4")
+    board.push_san("Nc6")
+    board.push_san("Qh5")
+    board.push_san("Nf6")
+    '''
+    for key in self.r_mate.keys("*'c4d3', 'c6b4'*"):
+    print(f"{key} :  {self.r_mate.get(key)}")
+    '''
+    #['c4d3', 'c6b4'] :  1 error
+    use_model(board=board)
 
+#def test_move_picker():
 
 
 
@@ -94,16 +103,37 @@ def use_model(board: chess.Board = chess.Board()):
     red_obj.reset_and_fill_redis()
     #keys after this point: "['c4b5', 'h7h6']:r1bqkb1r/pppp1pp1/2n2n1p/1B2p2Q/4P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 5"
     cowsay.cow("making predictions")
-
+    #mp.create_move_tree()
     
     nn.send_move_scores_to_redis(board)
     #keys after this point: "['c4e6', 'f6h5']"
     cowsay.cow("choosing move")
-    move = mp.highest_average_move(board=board)
+    #move = mp.highest_average_move(board=board)
+    move = mp.find_forced_wins(board=board)
     print(move)
     print("Finish")
 
     return 0
+
+def test_tree(board: chess.Board = chess.Board()):
+    
+    cowsay.cow("processing redis boards")
+
+
+    red_obj = populator(depth=score_depth,mate_depth=mate_depth,board=board,
+                        redis_score_db=redis_score_db,redis_mate_db=redis_mate_db)
+    red_obj.reset_and_fill_redis()
+    #keys after this point: "['c4b5', 'h7h6']:r1bqkb1r/pppp1pp1/2n2n1p/1B2p2Q/4P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 5"
+
+    mp.create_move_tree()
+    cowsay.cow("pruning tree")
+    #move = mp.highest_average_move(board=board)
+    move = mp.find_forced_wins(board=board)
+    print(move)
+    print("Finish")
+
+    return 0
+
 
 if __name__ == "__main__":
     main()

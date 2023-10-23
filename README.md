@@ -25,7 +25,12 @@ Create function in main for creating and training and model and one for using it
 Still have to evaluate use case of when checkmate is within depth of moves or less
 
 Notes:
+Discovered my term for compression applied to trees for sequential games is known as minmax pruning I believe.
 For scalability in the future, add a machine id to the redis keys for moves uploaded by specific instances
+move_picker function compress has logical error and now eraeses db up to winning move, instead want all moves even if losing for analysis.
+move_picker compress function needs abstraction, and line 269 is certainely a logical error as it deletes keys which are 2 moves long and therefore not fully compressed yet.
+
 
 Future optomizations:
 Use redis pipeline for mass key readings and uploads
+Use opening book in begining
