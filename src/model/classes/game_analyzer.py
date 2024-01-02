@@ -4,9 +4,9 @@ import hiredis
 import csv
 import os
 import ast
-import scorer
+from model.classes.scorer import boardEval
 from tqdm import tqdm
-from config import Settings
+from model.config.config import Settings
 
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 
@@ -112,7 +112,7 @@ class game_analyzer:
 
 
     def evaluate_board(self,fen,victor="NA"):
-        evaluator = scorer.boardEval(fen=fen,player=self.player)
+        evaluator = boardEval(fen=fen,player=self.player)
         return evaluator.get_board_scores(victor=victor)
 
     def create_csv(self):
@@ -123,7 +123,7 @@ class game_analyzer:
         # Create a new CSV file with the column headers
         with open(self.output_file, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            scorer_obj = scorer.boardEval()
+            scorer_obj = boardEval()
             features = scorer_obj.get_features()
             writer.writerow(features)
 

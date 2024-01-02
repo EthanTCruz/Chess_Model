@@ -2,14 +2,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
-from game_analyzer import game_analyzer
+from model.classes.game_analyzer import game_analyzer
 import numpy as np
-from redis_populator import populator
+from model.classes.redis_populator import populator
 import redis
 import os
 import chess
-from config import Settings
-
+from model.config.config import Settings
+import random
 
 class neural_net():
 
@@ -38,14 +38,11 @@ class neural_net():
         else:
             self.r_score = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_score_db))
 
-        if "redis_mate_db" not in kwargs:
-            raise Exception("No redis mate db connections were supplied")
-        else:
-            self.r_mate = redis.Redis(host=s.redis_host, port=s.redis_port,db=int(s.redis_mate_db))
+
         
         if "ModelFilePath" or "ModelFilename" not in kwargs:
-            ModelFilePath="./"
-            ModelFilename="chess_model"
+            ModelFilePath= s.ModelFilePath
+            ModelFilename = s.ModelFilename
             self.ModelFile = f"{ModelFilePath}{ModelFilename}"
         else:
             self.ModelFile = f"{kwargs['ModelFilePath']}{kwargs['ModelFilename']}"
@@ -128,6 +125,7 @@ class neural_net():
 
 
     def partition_and_scale(self,X,Y):
+        random.seed(3141)
         # Split the data into training and testing sets
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=self.test_size, random_state=self.random_state)
 
