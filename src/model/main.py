@@ -1,17 +1,17 @@
 import sys
-sys.path.append('C:\\Users\\ethan\\git\\chess_model\\src')
+sys.path.append('C:\\Users\\ethan\\git\\chess_model')
 
-from model.classes.redis_populator import populator
-from  model.classes.game_analyzer import game_analyzer
+from src.model.classes.redis_populator import populator
+from  src.model.classes.game_analyzer import game_analyzer
 import chess
-from model.classes.pgn_processor import pgn_processor
-from model.classes.nn_model import neural_net
+from src.model.classes.pgn_processor import pgn_processor
+from src.model.classes.nn_model import neural_net
 import os
 import cowsay
-from model.classes.move_picker import move_picker
+from src.model.classes.move_picker import move_picker
 import redis
 import hiredis
-from model.config.config import Settings
+from src.model.config.config import Settings
 s = Settings()
 ModelFilePath=s.ModelFilePath
 ModelFilename=s.ModelFilename
@@ -108,22 +108,17 @@ def train_and_test_model():
     return 0
 
 def use_model(board: chess.Board = chess.Board()):
-    
     cowsay.cow("processing redis boards")
-
-
     red_obj = populator(depth=score_depth,board=board,
                         redis_score_db=redis_score_db)
     red_obj.reset_and_fill_redis()
-    #keys after this point: "['c4b5', 'h7h6']:r1bqkb1r/pppp1pp1/2n2n1p/1B2p2Q/4P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 5"
     cowsay.cow("making predictions")
-    #mp.create_move_tree()
-    
     nn.send_move_scores_to_redis(board)
-    #keys after this point: "['c4e6', 'f6h5']"
+
     cowsay.cow("choosing move")
-    #move = mp.highest_average_move(board=board)
+
     move = mp.highest_average_move(board=board)
+    redis_score_db.flushall()
     print(move)
     print("Finish")
 

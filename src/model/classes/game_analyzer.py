@@ -4,9 +4,9 @@ import hiredis
 import csv
 import os
 import ast
-from model.classes.scorer import boardEval
+from src.model.classes.scorer import boardEval
 from tqdm import tqdm
-from model.config.config import Settings
+from src.model.config.config import Settings
 
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 

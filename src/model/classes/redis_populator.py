@@ -1,7 +1,7 @@
 import chess
 import redis
 import hiredis
-from model.config.config import Settings
+from src.model.config.config import Settings
 
 
 

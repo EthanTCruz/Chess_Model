@@ -2,13 +2,13 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
-from model.classes.game_analyzer import game_analyzer
+from src.model.classes.game_analyzer import game_analyzer
 import numpy as np
-from model.classes.redis_populator import populator
+from src.model.classes.redis_populator import populator
 import redis
 import os
 import chess
-from model.config.config import Settings
+from src.model.config.config import Settings
 import ast
 
 class Node:
