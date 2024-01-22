@@ -1,0 +1,7 @@
+.vscode/
+.venv/
+**/__pycache__/
+**/.pytest_cache/
+src/model/chess_modelmodel.h5
+Chess_Model/src/model/chess_model
+Chess_Model/terraform/secret.json

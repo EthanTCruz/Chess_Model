@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Run Main Model",
+            "type": "python",
+            "request": "launch",
+            "program": "Chess_Model/src/model/main.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "FastAPI",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "src.api.main:app", // Assuming your FastAPI app is defined in 'main.py' with the instance name 'app'
+                "--reload"
+            ],
+            "cwd": "Chess_Model/src/api/main.py",
+            "jinja": true
+        }
+    ]
+}

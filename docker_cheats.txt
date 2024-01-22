@@ -1,0 +1,23 @@
+docker build . -t chess_model
+docker run chess_model:latest
+docker tag chess_model ethancruz/chess_model:v1.0.5
+docker push ethancruz/chess_model:v1.0.5
+
+tmux new -s train
+tmux attach -t train
+
+terraform init
+terraform plan -var-file="variables.tfvars" -target=module.my_module
+
+terraform plan -var-file="variables.tfvars" -target="google_container_cluster.gke_cluster" -target="google_container_node_pool.primary_nodes"
+terraform apply -var-file="variables.tfvars" -target="google_container_cluster.gke_cluster" -target="google_container_node_pool.primary_nodes"
+
+terraform plan -var-file="variables.tfvars" -target="kubernetes_pod.high_resource_ml_pod" 
+terraform apply -var-file="variables.tfvars" -target="kubernetes_pod.high_resource_ml_pod"
+
+
+terraform plan -var-file="variables.tfvars"
+terraform apply -var-file="variables.tfvars"
+
+terraform plan -var-file="variables.tfvars"
+terraform apply -var-file="variables.tfvars"

@@ -1,0 +1,13 @@
+minikube kubectl -- apply -f deployment.yaml
+minikube start --memory=6000 --cpus=4
+minikube kubectl -- describe pod chess-model-66cdd746fc-6lhlk
+minikube kubectl -- logs chess-model-66cdd746fc-6lhlk
+minikube kubectl -- get events 
+minikube kubectl -- get pods
+minikube kubectl -- describe node
+minikube kubectl -- exec -it chess-model-7ccff76f66-6tgkb -- /bin/bash  
+minikube kubectl --  delete pod chess-model-66cdd746fc-kxc7c --grace-period=0 --force
+minikube kubectl --  logs chess-model-66cdd746fc-6lhlk --previous
+kubectl config get-contexts
+kubectl config use-context 
+gcloud container clusters get-credentials chess-app --zone us-central1-a
