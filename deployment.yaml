@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chess-model
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chess-model
+  template:
+    metadata:
+      labels:
+        app: chess-model
+    spec:
+      containers:
+      - name: chess-model
+        image: ethancruz/chess_model:v1.0.4
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: "14Gi"
+          requests:
+            memory: "12Gi"
