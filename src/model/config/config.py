@@ -6,8 +6,8 @@ class Settings(BaseSettings, case_sensitive=True):
     redis_score_db: int = 1
     
     nnGenBatchSize: int = 8192
-    nnBatchSize: int = 1092
-    nnEpochs: int = 512
+    nnBatchSize: int = 2048
+    nnEpochs: int = 192
     nnTestSize: float = 0.15
     nnValidationSize: float  = 0.15
     
@@ -32,7 +32,7 @@ class Settings(BaseSettings, case_sensitive=True):
     player: str = 'w'
     endgame_table: str = f"{srcModelDirectory}/data/EndgameTbl/"
     minimumEndgamePieces: int = 5
-    trainModel: bool = False
+    trainModel: bool = True
     selfTrain: bool = True
 
     copy_file: str = f"{srcModelDirectory}/data/copy_data.csv"
@@ -40,6 +40,9 @@ class Settings(BaseSettings, case_sensitive=True):
     testingFile: str = f"{srcModelDirectory}/data/testing.csv"
     validationFile: str = f"{srcModelDirectory}/data/validation.csv"
     evalModeFile: str = f"{srcModelDirectory}/data/modelEval.csv"
+
+    GOOGLE_APPLICATION_CREDENTIALS: str = "C:\\Users\\ethan\\git\\Full_Chess_App\\Chess_Model\\terraform\\secret.json"
+    BUCKET_NAME: str = "chess-model-weights"
     class Config:
         env_prefix = ''
 

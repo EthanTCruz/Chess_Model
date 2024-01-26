@@ -18,9 +18,10 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir -r /usr/src/app/Chess_Model/requirements.txt
 
 # Define environment variable
-ENV trainModel True
-ENV selfTrain False
-
+ENV trainModel False
+ENV selfTrain True
+ENV GOOGLE_APPLICATION_CREDENTIALS '/var/secrets/google/key.json'
+ENV BUCKET_NAME "chess-model-weights"
 
 #CMD ["python","./Chess_Model/src/model/main.py"]
 CMD while true; do sleep 10; done

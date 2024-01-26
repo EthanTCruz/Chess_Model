@@ -96,7 +96,7 @@ class trainer():
         cowsay.cow(f"Training neural net on {self.scores_file} and saving weights to {self.selfPlayModel}")
 
                 
-        self.nn.create_and_evaluate_model()
+        self.nn.create_and_evaluate_model_batch()
 
 
 

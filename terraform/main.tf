@@ -15,6 +15,24 @@ provider "google" {
 }
 
 
+resource "google_service_account" "my_service_account" {
+  account_id   = "chess-model-svc-acct"
+  display_name = "Chess Model bucket actor"
+}
+resource "google_service_account_key" "my_service_account_key" {
+  service_account_id = google_service_account.my_service_account.name
+}
+resource "kubernetes_secret" "my_gcp_secret" {
+  metadata {
+    name = "my-gcp-secret"
+  }
+
+  data = {
+    "key.json" = base64encode(google_service_account_key.my_service_account_key.private_key)
+  }
+}
+
+
 resource "google_container_cluster" "gke_cluster" {
   name     = var.cluster_name
   location = var.region
@@ -75,6 +93,28 @@ resource "kubernetes_pod" "high_resource_ml_pod" {
           cpu    = "4000m" // Setting a limit of 4 CPU cores
         }
       }
+      volume_mount {
+        mount_path = "/var/secrets/google"
+        name       = "gcp-key"
+        read_only  = true
+      }
+    }
+        volume {
+      name = "gcp-key"
+
+      secret {
+        secret_name = kubernetes_secret.my_gcp_secret.metadata[0].name
+      }
     }
   }
+
+
 }
+
+resource "google_storage_bucket" "my_bucket" {
+  name     = var.bucket_name
+  location = var.bucket_location
+  storage_class = var.storage_class
+  force_destroy = true
+}
+
