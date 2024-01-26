@@ -51,11 +51,11 @@ mp = move_picker(neuralNet=nn)
 
 def main():
     #test()
-    tune_parameters()
-    # if s.trainModel:
-    #     train_and_test_model()
-    # if s.selfTrain:
-    #     test_self_train()
+    #tune_parameters()
+    if s.trainModel:
+        train_and_test_model()
+    if s.selfTrain:
+        test_self_train()
     #board = chess.Board(fen='8/8/6K1/8/2k5/2P2R2/1P6/8 w - - 0 44')
     #test_endgame(board=board)
     #train_and_test_model()
@@ -115,9 +115,6 @@ def train_and_test_model():
     #     os.remove(scores_file)
     # if os.path.exists(games_csv_file):
     #     os.remove(games_csv_file)
-
-
-
 
 
     # pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
@@ -185,7 +182,7 @@ def get_sample_board():
 
 def tune_parameters():
     create_csv()
-    epoch_sizes = [256,512]
+    epoch_sizes = [192,512]
     batch_sizes = [2048]
     for b in batch_sizes:
         for e in epoch_sizes:

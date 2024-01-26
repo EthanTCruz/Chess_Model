@@ -14,10 +14,18 @@ spec:
     spec:
       containers:
       - name: chess-model
-        image: ethancruz/chess_model:v1.0.4
+        image: ethancruz/chess_model:v1.0.6
         imagePullPolicy: Always
         resources:
           limits:
             memory: "14Gi"
           requests:
             memory: "12Gi"
+        volumeMounts:
+        - name: gcp-key
+          mountPath: "/var/secrets/google"
+          readOnly: true
+      volumes:
+      - name: gcp-key
+        secret:
+          secretName: my-gcp-secret

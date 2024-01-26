@@ -1,7 +1,8 @@
 docker build . -t chess_model
 docker run chess_model:latest
-docker tag chess_model ethancruz/chess_model:v1.0.5
-docker push ethancruz/chess_model:v1.0.5
+docker exec -it modest_mccarthy /bin/bash
+docker tag chess_model ethancruz/chess_model:v1.0.7
+docker push ethancruz/chess_model:v1.0.7
 
 tmux new -s train
 tmux attach -t train
@@ -16,8 +17,8 @@ terraform plan -var-file="variables.tfvars" -target="kubernetes_pod.high_resourc
 terraform apply -var-file="variables.tfvars" -target="kubernetes_pod.high_resource_ml_pod"
 
 
-terraform plan -var-file="variables.tfvars"
-terraform apply -var-file="variables.tfvars"
+terraform plan -var-file="variables.tfvars" -target="google_storage_bucket.my_bucket"
+terraform apply -var-file="variables.tfvars" -target="google_storage_bucket.my_bucket"
 
 terraform plan -var-file="variables.tfvars"
 terraform apply -var-file="variables.tfvars"

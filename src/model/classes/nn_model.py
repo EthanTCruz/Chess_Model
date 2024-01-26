@@ -8,11 +8,10 @@ import chess
 from Chess_Model.src.model.config.config import Settings
 import random
 from joblib import dump, load
-import shutil
-import csv
+from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_blob
 import math
 from Chess_Model.src.model.classes.dataGenerator import data_generator
-
+from datetime import datetime
 
 
 
@@ -126,7 +125,8 @@ class neural_net():
             self.validation_size =  kwargs["nnValidationSize"]    
 
         self.dataGenerator = data_generator(**kwargs)
-
+        self.gcp_creds = s.GOOGLE_APPLICATION_CREDENTIALS
+        self.bucket_name = s.BUCKET_NAME
 
 
 
@@ -276,8 +276,13 @@ class neural_net():
 
         print("Test loss:", loss)
         print("Test accuracy:", accuracy)
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        destination_blob_name = f"models/{timestamp}-{self.ModelFilename}"
+        upload_blob(bucket_name=self.bucket_name,
+                    source_file_name=self.ModelFile,
+                    destination_blob_name=destination_blob_name)
+        
         self.reload_model()
-
         return loss,accuracy
         #return model
     
