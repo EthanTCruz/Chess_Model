@@ -72,3 +72,28 @@ Test accuracy: 0.8449500799179077
 Batch size: 50, epochs: 300
 Test loss: 0.3614208698272705
 Test accuracy: 0.8468728065490723
+
+pin(color: chess.Color, square: chess.Square)→ SquareSet[source]
+Detects an absolute pin (and its direction) of the given square to the king of the given color.
+
+import chess
+
+board = chess.Board("rnb1k2r/ppp2ppp/5n2/3q4/1b1P4/2N5/PP3PPP/R1BQKBNR w KQkq - 3 7")
+board.is_pinned(chess.WHITE, chess.C3)
+True
+direction = board.pin(chess.WHITE, chess.C3)
+direction
+SquareSet(0x0000_0001_0204_0810)
+print(direction)
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+1 . . . . . . .
+. 1 . . . . . .
+. . 1 . . . . .
+. . . 1 . . . .
+. . . . 1 . . .
+Returns a set of squares that mask the rank, file or diagonal of the pin. If there is no pin, then a mask of the entire board is returned.
+
+is_pinned(color: chess.Color, square: chess.Square)→ bool[source]
+Detects if the given square is pinned to the king of the given color.

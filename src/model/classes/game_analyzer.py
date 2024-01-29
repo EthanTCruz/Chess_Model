@@ -1,11 +1,14 @@
 import chess
-
+import numpy as np
 import csv
 import os
 import pandas as pd
 from Chess_Model.src.model.classes.scorer import boardEval
+from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
 from tqdm import tqdm
 from Chess_Model.src.model.config.config import Settings
+from Chess_Model.src.model.classes.sqlite.dependencies import fetch_all_game_positions, get_row_count, board_to_GamePostition
+from Chess_Model.src.model.classes.sqlite.models import GamePositions
 
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 
@@ -27,7 +30,7 @@ class game_analyzer:
             self.persist_data = kwargs["persist_data"]
         self.evaluator = boardEval()
         self.evaluator.open_tables()
-
+        self.cnn_evaluator = boardCnnEval()
         self.basedf = self.create_scores_df()
 
 
@@ -72,7 +75,6 @@ class game_analyzer:
 
     
     def process_csv_boards(self,csv_file):
-        
         self.create_csv()
         with open(csv_file) as f:
             total_lines = sum(1 for line in f)
@@ -100,7 +102,6 @@ class game_analyzer:
         
 
     def process_boards(self,total_moves:dict):
-        
         self.create_csv()
         with open(self.output_file, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -182,3 +183,45 @@ class game_analyzer:
             features = self.evaluator.get_features()
             writer.writerow(features)
 
+    def create_cnn_csv(self):
+        # Check if the file exists and remove it
+        if os.path.exists(self.output_file) and not self.persist_data:
+            os.remove(self.output_file)
+
+        # Create a new CSV file with the column headers
+        with open(self.output_file, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+
+            features = self.cnn_evaluator.get_features()
+            writer.writerow(features)
+            pass
+
+    def cnn_evaluate_board(self,game: GamePositions):
+        self.cnn_refresh_evaluator(game=game)
+        return self.cnn_evaluator.get_board_scores()
+    
+    def cnn_refresh_evaluator(self,game: GamePositions):
+        self.cnn_evaluator.setup_parameters_gamepositions(game=game)
+
+
+
+    def process_sqlite_boards(self):
+        self.create_cnn_csv()
+        row_count = get_row_count()
+        with open(self.output_file, 'a', newline='') as gameEvalfile:
+            writer = csv.writer(gameEvalfile)
+            # find total number of lines in the file
+        
+            for game in fetch_all_game_positions():
+
+                try:
+                    if game is None:
+                         return 1
+                    scores = self.cnn_evaluate_board(game=game)
+                    # Writing 8x8 array entries
+                    row = list(scores.values())
+                    writer.writerow(row)
+
+                except Exception as e:
+
+                    raise Exception(e)
