@@ -12,7 +12,8 @@ from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_b
 import math
 from Chess_Model.src.model.classes.dataGenerator import data_generator
 from datetime import datetime
-
+from tensorflow.keras.layers import Input, Dense, Conv2D, Flatten, Concatenate
+from tensorflow.keras.models import Model
 
 
 class neural_net():
@@ -122,7 +123,11 @@ class neural_net():
         if "nnValidationSize" not in kwargs:
             self.validation_size = s.nnValidationSize
         else:
-            self.validation_size =  kwargs["nnValidationSize"]    
+            self.validation_size =  kwargs["nnValidationSize"]
+
+
+
+            
 
         self.dataGenerator = data_generator(**kwargs)
         self.gcp_creds = s.GOOGLE_APPLICATION_CREDENTIALS
@@ -286,6 +291,76 @@ class neural_net():
         return loss,accuracy
         #return model
     
+    def create_and_evaluate_cnn_model_batch(self):
+        self.dataGenerator.initialize_cnn_datasets()
+        batch_size = self.batch_size  # Batch size
+
+        validation_batch = self.batch_size
+        validation_samples = self.get_row_count(filename=self.validation_file)
+        validation_steps = math.ceil(validation_samples/validation_batch)
+        shape = self.dataGenerator.get_cnn_shape()
+        test = next(self.dataGenerator.scaled_data_generator_cnn(batch_size=self.gen_batch_size,filename=self.train_file))
+        matrix_shape =  Input(shape=shape[0])
+        metadata_shape = Input(shape=shape[1])
+        # Convolutional layers for chessboard
+        conv1 = Conv2D(filters=64, kernel_size=(3, 3), activation='relu')(matrix_shape)
+        conv2 = Conv2D(filters=64, kernel_size=(3, 3), activation='relu')(conv1)
+        flattened = Flatten()(conv2)
+
+        # Dense layers for metadata
+        meta_dense = Dense(64, activation='relu')(metadata_shape)
+
+        # Combine outputs
+        combined = Concatenate()([flattened, meta_dense])
+
+        # Additional dense layers
+        dense1 = Dense(128, activation='relu')(combined)
+        dense2 = Dense(64, activation='relu')(dense1)
+
+        # Output layer
+        output = Dense(3, activation='softmax')(dense2)
+
+        model = Model(inputs=[matrix_shape, metadata_shape], outputs=output)
+
+        train_dataset = self.dataGenerator.dataset_from_generator_cnn(
+                filename=self.train_file,
+                batch_size=batch_size)
+        validation_dataset = self.dataGenerator.dataset_from_generator_cnn(
+                filename=self.validation_file,
+                batch_size=batch_size)
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+        
+        # Train the model
+        history = model.fit(train_dataset,
+                  steps_per_epoch=batch_size,
+                  epochs=self.epochs, 
+                  validation_data=validation_dataset,
+                  validation_steps=validation_steps)
+        # Evaluate the model on the test set
+
+        test_dataset = self.dataGenerator.dataset_from_generator_cnn(
+                filename=self.test_file,
+                batch_size=batch_size,)
+        
+        test_size = self.dataGenerator.test_dataset_size(filename=self.test_file)
+        steps = math.ceil((test_size - 1) / batch_size)
+        loss, accuracy = model.evaluate(test_dataset,steps=steps)
+
+        tf.keras.models.save_model(model=model,filepath=self.ModelFile)
+
+        # print("Test loss:", loss)
+        # print("Test accuracy:", accuracy)
+        # timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        # destination_blob_name = f"models/{timestamp}-{self.ModelFilename}"
+        # upload_blob(bucket_name=self.bucket_name,
+        #             source_file_name=self.ModelFile,
+        #             destination_blob_name=destination_blob_name)
+        
+        self.reload_model()
+        return loss,accuracy
+        #return model
+
     def create_and_evaluate_model(self):
 
         data = pd.read_csv(self.filename)

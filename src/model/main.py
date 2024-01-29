@@ -4,9 +4,11 @@ import csv
 sys.path.append('./')
 
 
+from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions
 from  Chess_Model.src.model.classes.game_analyzer import game_analyzer
 import chess
 from Chess_Model.src.model.classes.pgn_processor import pgn_processor
+from Chess_Model.src.model.classes.dataGenerator import data_generator
 from Chess_Model.src.model.classes.nn_model import neural_net
 import cowsay
 from Chess_Model.src.model.classes.move_picker import move_picker
@@ -14,7 +16,7 @@ from Chess_Model.src.model.config.config import Settings
 import time
 from Chess_Model.src.model.classes.model_trainer import trainer
 from Chess_Model.src.model.classes.endgame import endgamePicker
-
+from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
 
 
 s = Settings()
@@ -34,8 +36,9 @@ score_depth = s.score_depth
 eval_file = s.evalModeFile
 #pgn_file=s.samplePgn
 
+target_features = ["white mean","black mean","stalemate mean"]
 
-nn = neural_net(filename=scores_file,target_feature='w/b',
+nn = neural_net(filename=scores_file,target_feature=target_features,
                 test_size=test_size,ModelFilename = ModelFilename,
                 ModelFilePath=ModelFilePath,player='w',
                 predictions_board=predictions_board,epochs=epochs,
@@ -43,7 +46,7 @@ nn = neural_net(filename=scores_file,target_feature='w/b',
 
 
 
-mp = move_picker(neuralNet=nn)
+# mp = move_picker(neuralNet=nn)
 
 
 
@@ -52,16 +55,49 @@ mp = move_picker(neuralNet=nn)
 def main():
     #test()
     #tune_parameters()
-    if s.trainModel:
-        train_and_test_model()
-    if s.selfTrain:
-        test_self_train()
+
+    # if s.trainModel:
+    #     train_and_test_model()
+    # if s.selfTrain:
+    #     test_self_train()
     #board = chess.Board(fen='8/8/6K1/8/2k5/2P2R2/1P6/8 w - - 0 44')
     #test_endgame(board=board)
     #train_and_test_model()
-
+    #pgn_to_db()
+    #test_data_generator()
     #highest_scoring_move()
+    create_and_evaluate_cnn()
     return 0
+
+def create_and_evaluate_cnn():
+    pgn_to_db()
+    nn.create_and_evaluate_cnn_model_batch()
+    return 0
+
+def test_data_generator():
+
+    dg = data_generator(target_feature=target_features)
+    dg.get_cnn_shape()
+    dg.initialize_cnn_datasets()
+    return 0
+def pgn_to_db():
+    delete_all_game_positions()
+    if os.path.exists(scores_file):
+        os.remove(scores_file)
+    if os.path.exists(games_csv_file):
+        os.remove(games_csv_file)
+
+
+    pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
+    cowsay.cow(f"Converting pgn file to db: {games_csv_file}")    
+    pgn_obj.pgn_fen_to_sqlite()
+    del pgn_obj
+    cowsay.cow(f"Generating feature data from pgn boards in csv: {scores_file}")
+    gam_an_obj = game_analyzer(scores_file=scores_file)
+    gam_an_obj.process_sqlite_boards()
+    del gam_an_obj
+    
+    return 0 
 
 def highest_scoring_move():
     #board = chess.Board(fen='r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4')
@@ -209,6 +245,11 @@ def create_csv():
 
         columns = ["epochs","batch_size","loss","accuracy"]
         writer.writerow(columns)
+
+def test_scorer():
+    board = chess.Board()
+    obj = boardCnnEval(board=board)
+    obj.get_board_scores()
 
 if __name__ == "__main__":
     main()

@@ -25,7 +25,8 @@ src/model/data/*
 src/model/data/**
 **/.terraform/*
 
-
+src/model/data/gameData.db
+src/model/data/gameData.db-journal
 *.tfstate
 *.tfstate.*
 
