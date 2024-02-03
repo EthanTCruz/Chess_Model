@@ -7,3 +7,4 @@ terraform/
 deployment.yaml
 src/model/data/*
 !src/model/data/EndgameTbl
+src/model/chess_model/*

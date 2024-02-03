@@ -1,15 +1,16 @@
 import chess
-import numpy as np
+
 import csv
 import os
 import pandas as pd
+from sqlalchemy.orm import  Session
 from Chess_Model.src.model.classes.scorer import boardEval
 from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
 from tqdm import tqdm
 from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.sqlite.dependencies import fetch_all_game_positions, get_row_count, board_to_GamePostition
+from Chess_Model.src.model.classes.sqlite.dependencies import  fetch_all_game_positions_rollup,get_rollup_row_count
 from Chess_Model.src.model.classes.sqlite.models import GamePositions
-
+from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 
 class game_analyzer:
@@ -205,23 +206,22 @@ class game_analyzer:
 
 
 
-    def process_sqlite_boards(self):
+    def process_sqlite_boards(self,db: Session = SessionLocal()):
         self.create_cnn_csv()
-        row_count = get_row_count()
+
+        row_count = get_rollup_row_count(db=db)
         with open(self.output_file, 'a', newline='') as gameEvalfile:
             writer = csv.writer(gameEvalfile)
-            # find total number of lines in the file
-        
-            for game in fetch_all_game_positions():
-
+            batch = fetch_all_game_positions_rollup(yield_size=500, db=db)
+            
+            # Wrap the generator with tqdm
+            for game in tqdm(batch, total=row_count, desc="Processing Feature Data"):
                 try:
                     if game is None:
-                         return 1
+                        return 1
                     scores = self.cnn_evaluate_board(game=game)
-                    # Writing 8x8 array entries
                     row = list(scores.values())
                     writer.writerow(row)
 
                 except Exception as e:
-
                     raise Exception(e)
