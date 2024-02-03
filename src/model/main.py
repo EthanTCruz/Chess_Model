@@ -2,8 +2,8 @@ import sys
 import os
 import csv
 sys.path.append('./')
-
-
+from sqlalchemy.orm import  Session
+from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions
 from  Chess_Model.src.model.classes.game_analyzer import game_analyzer
 import chess
@@ -34,15 +34,27 @@ test_size = s.nnTestSize
 persist_model = s.persist_model
 score_depth = s.score_depth
 eval_file = s.evalModeFile
-#pgn_file=s.samplePgn
+if s.useSamplePgn:
+    pgn_file=s.samplePgn
 
 target_features = ["white mean","black mean","stalemate mean"]
-
-nn = neural_net(filename=scores_file,target_feature=target_features,
-                test_size=test_size,ModelFilename = ModelFilename,
-                ModelFilePath=ModelFilePath,player='w',
-                predictions_board=predictions_board,epochs=epochs,
-                trainModel=s.trainModel,batch_size=batch_size)
+nn_kwargs = {}
+nn_kwargs["filename"]=scores_file
+nn_kwargs["target_feature"]=target_features
+nn_kwargs["test_size"]=test_size
+nn_kwargs["ModelFilename"]=ModelFilename
+nn_kwargs["ModelFilePath"]=ModelFilePath
+nn_kwargs["player"]='w'
+nn_kwargs["predictions_board"]=predictions_board
+nn_kwargs["epochs"]=epochs
+nn_kwargs["trainModel"]=s.trainModel
+nn_kwargs["batch_size"]=batch_size
+#nn = neural_net(**nn_kwargs)
+# nn = neural_net(filename=scores_file,target_feature=target_features,
+#                 test_size=test_size,ModelFilename = ModelFilename,
+#                 ModelFilePath=ModelFilePath,player='w',
+#                 predictions_board=predictions_board,epochs=epochs,
+#                 trainModel=s.trainModel,batch_size=batch_size)
 
 
 
@@ -54,7 +66,7 @@ nn = neural_net(filename=scores_file,target_feature=target_features,
 
 def main():
     #test()
-    #tune_parameters()
+    tune_parameters()
 
     # if s.trainModel:
     #     train_and_test_model()
@@ -66,7 +78,7 @@ def main():
     #pgn_to_db()
     #test_data_generator()
     #highest_scoring_move()
-    create_and_evaluate_cnn()
+    #create_and_evaluate_cnn()
     return 0
 
 def create_and_evaluate_cnn():
@@ -80,8 +92,10 @@ def test_data_generator():
     dg.get_cnn_shape()
     dg.initialize_cnn_datasets()
     return 0
-def pgn_to_db():
-    delete_all_game_positions()
+
+def pgn_to_db(db: Session = SessionLocal()):
+
+    delete_all_game_positions(db = db)
     if os.path.exists(scores_file):
         os.remove(scores_file)
     if os.path.exists(games_csv_file):
@@ -90,7 +104,7 @@ def pgn_to_db():
 
     pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
     cowsay.cow(f"Converting pgn file to db: {games_csv_file}")    
-    pgn_obj.pgn_fen_to_sqlite()
+    pgn_obj.pgn_fen_to_sqlite(db = db)
     del pgn_obj
     cowsay.cow(f"Generating feature data from pgn boards in csv: {scores_file}")
     gam_an_obj = game_analyzer(scores_file=scores_file)
@@ -217,17 +231,28 @@ def get_sample_board():
     return board
 
 def tune_parameters():
+    target_features = ["white mean","black mean","stalemate mean"]
     create_csv()
-    epoch_sizes = [192,512]
-    batch_sizes = [2048]
+    if not s.trainDataExists:
+        pgn_to_db()
+        dg = data_generator(filename=scores_file,target_feature=target_features,
+                    test_size=test_size,ModelFilename = ModelFilename,
+                    ModelFilePath=ModelFilePath,player='w',
+                    predictions_board=predictions_board,
+                    trainModel=s.trainModel)
+        dg.initialize_cnn_datasets()
+        del dg
+
+    epoch_sizes = [16,64,128,256,512]
+    batch_sizes = [128,512,1024,2048,5012]
     for b in batch_sizes:
         for e in epoch_sizes:
-            nn = neural_net(filename=scores_file,target_feature='w/b',
+            nn = neural_net(filename=scores_file,target_feature=target_features,
                 test_size=test_size,ModelFilename = ModelFilename,
                 ModelFilePath=ModelFilePath,player='w',
                 predictions_board=predictions_board,epochs=e,
                 trainModel=s.trainModel,batch_size=b)
-            loss,accuracy = nn.create_and_evaluate_model_batch()
+            loss,accuracy = nn.create_and_evaluate_cnn_model_batch()
             with open(eval_file, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 row = [e,b,loss,accuracy]

@@ -3,7 +3,7 @@ from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 from Chess_Model.src.model.classes.sqlite.models import GamePositions
 from Chess_Model.src.model.config.config import Settings
 from sqlalchemy.orm import Session
-
+from typing import List, Tuple
 from sqlalchemy import or_, and_, func
 import chess
 
@@ -19,18 +19,18 @@ def get_db():
 
 def delete_all_game_positions(db: Session = next(get_db())):
     try:
-        # Open a new session
-        with db as session:
-            # Delete all records in the GamePositions table
-            session.query(GamePositions).delete()
 
-            # Commit the changes to the database
-            session.commit()
+        # Delete all records in the GamePositions table
+        db.query(GamePositions).delete()
 
-            print("All records in GamePositions have been deleted.")
+        # Commit the changes to the database
+        db.commit()
+
+        print("All records in GamePositions have been deleted.")
+
     except Exception as e:
         print(f"An error occurred: {e}")
-        session.rollback()
+        db.rollback()
 
 def insert_board_into_db(victor: str,board: chess.Board,db: Session = next(get_db())):
     game_info = board_to_GamePostition(board=board, victor=victor)
@@ -131,6 +131,74 @@ def fetch_all_game_positions(db: Session = next(get_db())):
         db.close()
         yield None
 
+class GamePositionWithWinBuckets:
+    def __init__(self, piece_positions, castling_rights, en_passant, turn, greater_than_n_half_moves, repeated_position, white_wins, black_wins, stalemates):
+        self.piece_positions = piece_positions
+        self.castling_rights = castling_rights
+        self.en_passant = en_passant
+        self.turn = turn
+        self.greater_than_n_half_moves = greater_than_n_half_moves
+        self.repeated_position = repeated_position
+        self.white_wins = white_wins
+        self.black_wins = black_wins
+        self.stalemates = stalemates
+        self.total_wins = white_wins + black_wins + stalemates
+        self.win_buckets = [white_wins/self.total_wins,black_wins/self.total_wins,stalemates/self.total_wins]
+
+def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get_db())):
+    try:
+        # Constructing the query with group by and sum
+        query = db.query(
+            GamePositions.piece_positions, 
+            GamePositions.castling_rights, 
+            GamePositions.en_passant, 
+            GamePositions.turn, 
+            GamePositions.greater_than_n_half_moves, 
+            GamePositions.repeated_position,
+            func.sum(GamePositions.white_wins).label('white_wins'),
+            func.sum(GamePositions.black_wins).label('black_wins'),
+            func.sum(GamePositions.stalemates).label('stalemates'),
+
+        ).group_by(
+            GamePositions.piece_positions, 
+            GamePositions.castling_rights, 
+            GamePositions.en_passant, 
+            GamePositions.turn, 
+            GamePositions.greater_than_n_half_moves, 
+            GamePositions.repeated_position
+        )
+
+        gen = query.yield_per(yield_size)
+
+        for result in gen:
+            game = GamePositionWithWinBuckets(
+                piece_positions=result.piece_positions,
+                castling_rights=result.castling_rights,
+                en_passant=result.en_passant,
+                turn=result.turn,
+                repeated_position=result.repeated_position,
+                greater_than_n_half_moves=result.greater_than_n_half_moves,
+                white_wins=result.white_wins,
+                black_wins=result.black_wins,
+                stalemates=result.stalemates
+            )
+            yield game
+
+
+    finally:
+        db.close()
+        yield None
+
+def calculate_win_buckets(white_wins, black_wins, stalemates):
+    total_wins = white_wins + black_wins + stalemates
+    if total_wins > 0:
+        mean_w = white_wins / total_wins
+        mean_b = black_wins / total_wins
+        mean_s = stalemates / total_wins
+    else:
+        mean_w = mean_b = mean_s = 0  # Default values if no wins
+    return [mean_w, mean_b, mean_s]
+
 def get_row_count(db: Session = next(get_db())):
     try:
         # Counting the rows in the GamePositions table
@@ -141,3 +209,46 @@ def get_row_count(db: Session = next(get_db())):
         return None
     finally:
         db.close()
+
+def get_rollup_row_count(db: Session = next(get_db())):
+    try:
+        # Counting the rows in the GamePositions table
+        count = db.query(
+            GamePositions.piece_positions, 
+            GamePositions.castling_rights, 
+            GamePositions.en_passant, 
+            GamePositions.turn, 
+            GamePositions.greater_than_n_half_moves, 
+            GamePositions.repeated_position,
+            func.sum(GamePositions.white_wins).label('white_wins'),
+            func.sum(GamePositions.black_wins).label('black_wins'),
+            func.sum(GamePositions.stalemates).label('stalemates'),
+
+        ).group_by(
+            GamePositions.piece_positions, 
+            GamePositions.castling_rights, 
+            GamePositions.en_passant, 
+            GamePositions.turn, 
+            GamePositions.greater_than_n_half_moves, 
+            GamePositions.repeated_position
+        ).count()
+        return count
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+    finally:
+        db.close()
+
+def insert_bulk_boards_into_db(board_victors: List[Tuple[chess.Board, str]], db: Session = next(get_db())):
+    games = []
+    for board, victor in board_victors:
+        games.append(board_to_GamePostition(board=board, victor=victor))
+    
+    try:
+        db.bulk_save_objects(games)
+        db.commit()
+        return len(games)  # Return the number of inserted records
+    except Exception as e:
+        db.rollback()
+        raise e

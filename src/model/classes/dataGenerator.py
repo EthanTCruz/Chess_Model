@@ -1,17 +1,15 @@
 import ast
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
-from Chess_Model.src.model.classes.game_analyzer import game_analyzer
 import numpy as np
-
+from tqdm import tqdm
 from Chess_Model.src.model.config.config import Settings
 import random
 from joblib import dump, load
 import shutil
 import csv
-
+import math
 
 
 
@@ -330,9 +328,10 @@ class data_generator():
         #matrixScaler = StandardScaler()
         
         limit = self.get_row_count(self.train_file)
+        adjusted_limit = math.ceil(limit/self.gen_batch_size)
         batch_amt = 0
-
-        for batch in self.data_generator_cnn(batch_size=self.gen_batch_size,filename=self.train_file):
+        batches = self.data_generator_cnn(batch_size=self.gen_batch_size,filename=self.train_file)
+        for batch in  tqdm(batches, total=adjusted_limit, desc="Creating Scalar"):
             if batch_amt > (limit-1):
                 break
             else:
@@ -399,7 +398,7 @@ def string_to_array(s):
 
 def flat_string_to_array(s):
     cleaned_string = s.strip('[]\'').replace('\n', '')
-    integer_array = np.array([int(num) for num in cleaned_string.split()])
+    integer_array = np.array([np.float32(num) for num in cleaned_string.split()])
     return integer_array
 
 def reshape_to_matrix(cell):

@@ -292,14 +292,16 @@ class neural_net():
         #return model
     
     def create_and_evaluate_cnn_model_batch(self):
-        self.dataGenerator.initialize_cnn_datasets()
+        #self.dataGenerator.initialize_cnn_datasets()
         batch_size = self.batch_size  # Batch size
-
+        training_size = self.get_row_count(filename=self.train_file)
+        steps_per_epoch = math.ceil(training_size/batch_size)
         validation_batch = self.batch_size
         validation_samples = self.get_row_count(filename=self.validation_file)
         validation_steps = math.ceil(validation_samples/validation_batch)
         shape = self.dataGenerator.get_cnn_shape()
-        test = next(self.dataGenerator.scaled_data_generator_cnn(batch_size=self.gen_batch_size,filename=self.train_file))
+        #test = next(self.dataGenerator.scaled_data_generator_cnn(batch_size=self.gen_batch_size,filename=self.train_file))
+        
         matrix_shape =  Input(shape=shape[0])
         metadata_shape = Input(shape=shape[1])
         # Convolutional layers for chessboard
@@ -333,7 +335,7 @@ class neural_net():
         
         # Train the model
         history = model.fit(train_dataset,
-                  steps_per_epoch=batch_size,
+                  steps_per_epoch=steps_per_epoch,
                   epochs=self.epochs, 
                   validation_data=validation_dataset,
                   validation_steps=validation_steps)
@@ -359,6 +361,7 @@ class neural_net():
         
         self.reload_model()
         return loss,accuracy
+    
         #return model
 
     def create_and_evaluate_model(self):

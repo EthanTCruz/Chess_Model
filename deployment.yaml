@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: chess-model
-        image: ethancruz/chess_model:v1.0.6
+        image: ethancruz/chess_model:v1.0.8
         imagePullPolicy: Always
         resources:
           limits:

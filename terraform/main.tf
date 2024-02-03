@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source = "hashicorp/google"
-      version = "4.51.0"
+      version = "5.14.0"
     }
   }
 }
@@ -39,7 +39,7 @@ resource "google_container_cluster" "gke_cluster" {
 
   remove_default_node_pool = true
   initial_node_count = 1
-
+  deletion_protection = false
   master_auth {
     client_certificate_config {
       issue_client_certificate = false
@@ -69,7 +69,6 @@ provider "kubernetes" {
   config_context = "gke_full-chess_us-central1_chess-app"
 }
 
-
 resource "kubernetes_pod" "high_resource_ml_pod" {
   metadata {
     name = "self-training-pod"
@@ -80,16 +79,16 @@ resource "kubernetes_pod" "high_resource_ml_pod" {
 
   spec {
     container {
-      image = "ethancruz/chess_model:v1.0.4"  // Replace with your container image
+      image = "ethancruz/chess_model:v1.0.8"  // Replace with your container image
       name  = "self-training"
 
       resources {
         requests = {
-          memory = "8Gi"   // Requesting 8 GB of memory
-          cpu    = "2000m" // Requesting 2 CPU cores (2000 milliCPU units)
+          memory = "24Gi"   // Requesting 8 GB of memory
+          cpu    = "3000m" // Requesting 2 CPU cores (2000 milliCPU units)
         }
         limits = {
-          memory = "16Gi"  // Setting a limit of 16 GB of memory
+          memory = "30Gi"  // Setting a limit of 16 GB of memory
           cpu    = "4000m" // Setting a limit of 4 CPU cores
         }
       }

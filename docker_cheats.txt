@@ -1,8 +1,8 @@
 docker build . -t chess_model
 docker run chess_model:latest
-docker exec -it modest_mccarthy /bin/bash
-docker tag chess_model ethancruz/chess_model:v1.0.7
-docker push ethancruz/chess_model:v1.0.7
+docker exec -it tender_varahamihira /bin/bash
+docker tag chess_model ethancruz/chess_model:v1.0.8
+docker push ethancruz/chess_model:v1.0.8
 
 tmux new -s train
 tmux attach -t train
