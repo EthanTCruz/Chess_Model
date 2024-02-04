@@ -10,7 +10,7 @@ import random
 from joblib import dump, load
 from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_blob
 import math
-from Chess_Model.src.model.classes.dataGenerator import data_generator
+from Chess_Model.src.model.classes.dataGenerator import data_generator,flat_string_to_array,reshape_to_matrix
 from datetime import datetime
 from tensorflow.keras.layers import Input, Dense, Conv2D, Flatten, Concatenate
 from tensorflow.keras.models import Model
@@ -132,6 +132,7 @@ class neural_net():
         self.dataGenerator = data_generator(**kwargs)
         self.gcp_creds = s.GOOGLE_APPLICATION_CREDENTIALS
         self.bucket_name = s.BUCKET_NAME
+        self.saveToBucket = s.saveToBucket
 
 
 
@@ -172,6 +173,7 @@ class neural_net():
 
     def load_scaler(self):
         scaler = load(self.scalerFile)
+        self.scaler = scaler
         return scaler
     
     def init_scaler(self,scaler:StandardScaler):
@@ -349,16 +351,18 @@ class neural_net():
         steps = math.ceil((test_size - 1) / batch_size)
         loss, accuracy = model.evaluate(test_dataset,steps=steps)
 
-        tf.keras.models.save_model(model=model,filepath=self.ModelFile)
-
-        # print("Test loss:", loss)
-        # print("Test accuracy:", accuracy)
-        # timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        # destination_blob_name = f"models/{timestamp}-{self.ModelFilename}"
-        # upload_blob(bucket_name=self.bucket_name,
-        #             source_file_name=self.ModelFile,
-        #             destination_blob_name=destination_blob_name)
+        model.save(filepath=self.ModelFile)
         
+        print("Test loss:", loss)
+        print("Test accuracy:", accuracy)
+
+        if self.saveToBucket:
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            destination_blob_name = f"models/{timestamp}-{self.ModelFilename}"
+            upload_blob(bucket_name=self.bucket_name,
+                        source_file_name=self.ModelFile,
+                        destination_blob_name=destination_blob_name)
+            
         self.reload_model()
         return loss,accuracy
     
@@ -496,6 +500,119 @@ class neural_net():
 
 
 
+    def clean_prediction_data_cnn(self,data):
+        # Remove the moves column, as it's not a useful feature for the neural network
+        Y = data['moves(id)']
+        data = data.drop(columns=['moves(id)'])
+
+
+
+        # Split the data into features and target
+        X = data.drop(columns=self.target_feature)
+        
+        matrix_data = pd.DataFrame()
+        for col in data.columns:
+            if col.endswith('positions'):
+                matrix_data[col] = data[col]
+
+        # DataFrame without 'positions' columns
+        non_positions_data = data.drop(columns=matrix_data.columns)
+
+        X = non_positions_data.drop(columns=self.target_feature)
+
+        return X, matrix_data, Y 
+
 
 
  
+    def score_moves_cnn(self,total_moves: dict = {}):
+     
+        data = self.game_analyzer_obj.process_boards_non_csv_cnn(total_moves=total_moves)
+
+        checkmates = data[(data["white mean"] == 1) | (data["black mean"] == 1)]
+
+        data = data[~data['moves(id)'].isin(checkmates['moves(id)'])]
+        if len(data) > len(data[data["stalemate mean"] == 1]):
+            data = data[~(data["stalemate mean"] == 1)]
+
+        if len(data) > 0:
+            data.reset_index(drop=True, inplace=True)
+            X,matrixData,moves = self.clean_prediction_data_cnn(data=data)
+            #matrixData_scaled = matrixData.applymap(reshape_to_matrix)
+            reshaped_arrays = []
+
+            for col in matrixData.columns:
+                # Reshape each column into 8x8 and convert to float32 tensor
+                reshaped_col = np.stack(matrixData[col].apply(lambda x: np.array(x).reshape(8, 8)), axis=0)
+                reshaped_col_tensor = tf.convert_to_tensor(reshaped_col, dtype=tf.float32)
+                reshaped_arrays.append(reshaped_col_tensor)
+
+            # Stack along the last axis to create a [None, 8, 8, 14] tensor
+            final_tensor = tf.stack(reshaped_arrays, axis=-1)
+            #tensor_data = tf.convert_to_tensor(matrixData_scaled, dtype=tf.float32)
+
+            # Reshape the tensor to the desired shape
+            # The -1 in reshape allows the batch size to be dynamically computed
+            #reshaped_data = tf.reshape(tensor_data, [-1, 8, 8, 14])
+            scaler =  self.load_scaler()
+            X = scaler.fit_transform(X)
+            predictions = self.model.predict((final_tensor,X))
+            if len(data) == len(predictions):
+                data['prediction'] = [pred for pred in predictions]
+            else:
+                raise ValueError("Number of predictions does not match number of rows in the DataFrame.")
+
+
+        checkmates['prediction'] = checkmates.apply(lambda row: [row['white mean'], row['black mean'], row['stalemate mean']], axis=1)
+
+        data = pd.concat([data,checkmates])
+        data = data[['moves(id)', 'prediction']]
+        data.reset_index(drop=True, inplace=True)
+        #error: should fix to be specific db
+        data['stalemate'] = data['prediction'].apply(lambda x: x[2])
+        data['black'] = data['prediction'].apply(lambda x: x[1])
+        data['white'] = data['prediction'].apply(lambda x: x[0])
+        data.drop(columns=['prediction'])
+
+        return data
+
+    def score_board_cnn(self,board: chess.Board):
+
+        #self.game_analyzer_obj.process_single_fen(fen=fen)
+        
+        #data = pd.read_csv(self.filename)
+        data = self.game_analyzer_obj.process_single_fen_non_csv_cnn(board=board)
+
+
+        X,matrixData,moves = self.clean_prediction_data_cnn(data=data)
+        #matrixData_scaled = matrixData.applymap(reshape_to_matrix)
+        reshaped_arrays = []
+
+        for col in matrixData.columns:
+            # Reshape each column into 8x8 and convert to float32 tensor
+            reshaped_col = np.stack(matrixData[col].apply(lambda x: np.array(x).reshape(8, 8)), axis=0)
+            reshaped_col_tensor = tf.convert_to_tensor(reshaped_col, dtype=tf.float32)
+            reshaped_arrays.append(reshaped_col_tensor)
+
+        final_tensor = tf.stack(reshaped_arrays, axis=-1)
+
+        X = self.scaler.fit_transform(X)
+        predictions = self.model.predict((final_tensor,X))
+        if len(data) == len(predictions):
+            data['prediction'] = [pred for pred in predictions]
+        else:
+            raise ValueError("Number of predictions does not match number of rows in the DataFrame.")
+
+
+
+        data = data[['moves(id)', 'prediction']]
+        data.reset_index(drop=True, inplace=True)
+        #error: should fix to be specific db
+        data['stalemate'] = data['prediction'].apply(lambda x: x[2])
+        data['black'] = data['prediction'].apply(lambda x: x[1])
+        data['white'] = data['prediction'].apply(lambda x: x[0])
+        data.drop(columns=['prediction'])
+
+
+
+        return(data)

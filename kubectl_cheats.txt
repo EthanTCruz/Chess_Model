@@ -5,7 +5,7 @@ kubectl logs chess-model-66cdd746fc-6lhlk
 kubectl get events 
 kubectl get pods
 kubectl describe node
-kubectl exec -it chess-model-7ccff76f66-6tgkb -- /bin/bash  
+kubectl exec -it self-training-pod -- /bin/bash  
 kubectl  delete pod chess-model-66cdd746fc-kxc7c --grace-period=0 --force
 kubectl  logs chess-model-66cdd746fc-6lhlk --previous
 kubectl config get-contexts
@@ -13,11 +13,14 @@ kubectl config use-context
 gcloud container clusters get-credentials chess-app --zone us-central1-a
 gcloud container clusters get-credentials chess-app --zone us-central1
 
+gsutil ls -L gs://chess-model-weights/models/20240203-103818-model.keras
+Get-FileHash -Path "C:\Users\ethan\Downloads\models_20240203-103818-model (1).keras" -Algorithm MD5
+
 docker build . -t chess_model
 docker run chess_model:latest
-docker exec -it tender_varahamihira /bin/bash
-docker tag chess_model ethancruz/chess_model:v1.0.8
-docker push ethancruz/chess_model:v1.0.8
+docker exec -it reverent_bohr /bin/bash
+docker tag chess_model ethancruz/chess_model:v1.0.10
+docker push ethancruz/chess_model:v1.0.10
 
 tmux new -s train
 tmux attach -t train
@@ -37,3 +40,5 @@ terraform apply -var-file="variables.tfvars" -target="google_storage_bucket.my_b
 
 terraform plan -var-file="variables.tfvars"
 terraform apply -var-file="variables.tfvars"
+
+terraform apply -var-file="variables.tfvars" -target="kubernetes_secret.my_gcp_secret"

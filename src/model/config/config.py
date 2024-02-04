@@ -14,7 +14,7 @@ class Settings(BaseSettings, case_sensitive=True):
 
     srcModelDirectory: str = './Chess_Model/src/model'
     ModelFilePath: str =f"{srcModelDirectory}/chess_model/"
-    ModelFilename: str ="model.h5"
+    ModelFilename: str = "model.h5"
     scores_file: str = f"{srcModelDirectory}/data/data.csv"
     pgn_file: str = f"{srcModelDirectory}/pgn/Adams.pgn"
     games_csv_file: str = f"{srcModelDirectory}/data/games.csv"
@@ -32,10 +32,11 @@ class Settings(BaseSettings, case_sensitive=True):
     player: str = 'w'
     endgame_table: str = f"{srcModelDirectory}/data/EndgameTbl/"
     minimumEndgamePieces: int = 5
-    trainModel: bool = True
+    trainModel: bool = False
     selfTrain: bool = False
-    trainDataExists: bool = False
+    trainDataExists: bool = True
     useSamplePgn: bool = True
+    saveToBucket: bool = False
 
     copy_file: str = f"{srcModelDirectory}/data/copy_data.csv"
     trainingFile: str = f"{srcModelDirectory}/data/training.csv"

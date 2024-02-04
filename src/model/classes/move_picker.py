@@ -1,5 +1,5 @@
 import pandas as pd
-import os
+
 import chess
 from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.MCTS import mcts
@@ -129,4 +129,44 @@ class move_picker():
         #preferred_moves = self.get_best_moves(board=board,percentile=percentile,move_scores=move_scores)
         
         move = self.ms.mcts_best_move(board=board,preferred_moves=preferred_moves,iterations=iterations, max_depth=max_depth)
+        return move
+    
+    def use_model_cnn(self,board: chess.Board = chess.Board(),score_depth: int = 1,percentile: float = 0.75):
+        
+        self.populator.set_depth_and_board(depth=score_depth,board=board)
+        self.populator.get_all_moves()
+        moves = self.populator.return_total_moves()
+
+        scores = self.nn.score_moves_cnn(total_moves=moves)
+
+        move = self.mcts_best_cnn(board=board,iterations=100,max_depth=500,percentile=percentile,move_scores=scores)
+
+        return move
+    
+    def get_all_moves_cnn(self, white: bool,move_scores: pd.DataFrame, percentile: float = 0.5):
+
+        stalemate_cutoff = move_scores['stalemate'].quantile((1-percentile))
+        move_scores_filtered = move_scores[move_scores['stalemate'] <= stalemate_cutoff]
+        if white:
+            wins = move_scores_filtered[move_scores_filtered['white']==1].head(1)['moves(id)']
+            if len(wins) > 0:
+                return wins
+
+            sorted_series = move_scores_filtered.sort_values(by='white',ascending=False)
+        else:
+            wins = move_scores_filtered[move_scores_filtered['black']==1].head(1)['moves(id)']
+            if len(wins) > 0:
+                return wins
+            sorted_series = move_scores_filtered.sort_values(by='black',ascending=False)
+
+
+
+        index_list = list(sorted_series["moves(id)"].values)
+        return index_list
+    
+    def mcts_best_cnn(self,board: chess.Board,move_scores: pd.DataFrame,iterations: int = 10,max_depth: int = 10,percentile: float = 0.5):
+        preferred_moves = self.get_all_moves_cnn(white=board.turn,percentile=percentile,move_scores=move_scores)
+
+
+        move = self.ms.mcts_best_move(board=board,preferred_moves=preferred_moves,iterations=iterations, max_depth=max_depth,cnn=True)
         return move

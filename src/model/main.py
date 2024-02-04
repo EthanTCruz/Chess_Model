@@ -57,7 +57,6 @@ nn_kwargs["batch_size"]=batch_size
 #                 trainModel=s.trainModel,batch_size=batch_size)
 
 
-
 # mp = move_picker(neuralNet=nn)
 
 
@@ -66,7 +65,7 @@ nn_kwargs["batch_size"]=batch_size
 
 def main():
     #test()
-    tune_parameters()
+    #tune_parameters()
 
     # if s.trainModel:
     #     train_and_test_model()
@@ -77,14 +76,11 @@ def main():
     #train_and_test_model()
     #pgn_to_db()
     #test_data_generator()
-    #highest_scoring_move()
-    #create_and_evaluate_cnn()
+    highest_scoring_move()
+
     return 0
 
-def create_and_evaluate_cnn():
-    pgn_to_db()
-    nn.create_and_evaluate_cnn_model_batch()
-    return 0
+
 
 def test_data_generator():
 
@@ -114,6 +110,9 @@ def pgn_to_db(db: Session = SessionLocal()):
     return 0 
 
 def highest_scoring_move():
+    nn = neural_net(**nn_kwargs)
+    mp = move_picker(neuralNet=nn)
+
     #board = chess.Board(fen='r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4')
     board = chess.Board()
     # board.push_san("e4")
@@ -129,12 +128,12 @@ def highest_scoring_move():
     board.push_san("Nc3")
     board.push_san("Bc5")
     board.push_san("Nb1")
-    #board.push_san("Qh4")
+    board.push_san("Qh4")
     #board.push_san("Nc3")
     #board.push_san("Qxf2")
 
     start_time = time.time()
-    move = mp.use_model(board=board)
+    move = mp.use_model_cnn(board=board)
 
     end_time = time.time()
     duration = end_time - start_time 
@@ -271,10 +270,6 @@ def create_csv():
         columns = ["epochs","batch_size","loss","accuracy"]
         writer.writerow(columns)
 
-def test_scorer():
-    board = chess.Board()
-    obj = boardCnnEval(board=board)
-    obj.get_board_scores()
 
 if __name__ == "__main__":
     main()

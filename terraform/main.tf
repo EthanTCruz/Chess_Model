@@ -28,10 +28,15 @@ resource "kubernetes_secret" "my_gcp_secret" {
   }
 
   data = {
-    "key.json" = base64encode(google_service_account_key.my_service_account_key.private_key)
+    "key.json" = google_service_account_key.my_service_account_key.private_key
   }
 }
 
+resource "google_project_iam_member" "service_account_storage_object_creator" {
+  project = var.project_id
+  role    = "roles/storage.objectCreator"
+  member  = "serviceAccount:${google_service_account.my_service_account.email}"
+}
 
 resource "google_container_cluster" "gke_cluster" {
   name     = var.cluster_name
@@ -79,17 +84,17 @@ resource "kubernetes_pod" "high_resource_ml_pod" {
 
   spec {
     container {
-      image = "ethancruz/chess_model:v1.0.8"  // Replace with your container image
+      image = "ethancruz/chess_model:v1.0.10"  // Replace with your container image
       name  = "self-training"
 
       resources {
         requests = {
-          memory = "24Gi"   // Requesting 8 GB of memory
-          cpu    = "3000m" // Requesting 2 CPU cores (2000 milliCPU units)
+          memory = "24Gi" 
+          cpu    = "3000m" 
         }
         limits = {
-          memory = "30Gi"  // Setting a limit of 16 GB of memory
-          cpu    = "4000m" // Setting a limit of 4 CPU cores
+          memory = "30Gi" 
+          cpu    = "4000m" 
         }
       }
       volume_mount {
