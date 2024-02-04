@@ -29,7 +29,10 @@ class GamePositions(Base):
     @property
     def win_buckets(self):
         total_wins = self.total_wins
-        mean_w = self.white_wins/total_wins
-        mean_b = self.black_wins/total_wins
-        mean_s = self.stalemates/total_wins
-        return [mean_w,mean_b,mean_s]
+        if total_wins > 0:
+            mean_w = self.white_wins/total_wins
+            mean_b = self.black_wins/total_wins
+            mean_s = self.stalemates/total_wins
+            return [mean_w,mean_b,mean_s]
+        else: 
+            return [0,0,0]

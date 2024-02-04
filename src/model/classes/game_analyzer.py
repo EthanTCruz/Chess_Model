@@ -8,7 +8,7 @@ from Chess_Model.src.model.classes.scorer import boardEval
 from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
 from tqdm import tqdm
 from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.sqlite.dependencies import  fetch_all_game_positions_rollup,get_rollup_row_count
+from Chess_Model.src.model.classes.sqlite.dependencies import  fetch_all_game_positions_rollup,get_rollup_row_count,board_to_GamePostition
 from Chess_Model.src.model.classes.sqlite.models import GamePositions
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
@@ -33,6 +33,8 @@ class game_analyzer:
         self.evaluator.open_tables()
         self.cnn_evaluator = boardCnnEval()
         self.basedf = self.create_scores_df()
+        self.basedf_cnn = self.create_scores_df_cnn()
+        
 
 
 
@@ -145,6 +147,24 @@ class game_analyzer:
         return data
 
 
+    def process_boards_non_csv_cnn(self,total_moves:dict):
+        
+        data = self.create_scores_df_cnn()
+        for key in total_moves.keys():
+
+            values = key.split(":")
+            moves = [values[0]]
+            victor = total_moves[key][0]
+
+            game = board_to_GamePostition(board= total_moves[key][1],victor=victor)
+            scores = self.cnn_evaluate_board(game=game)          
+            row = moves + list(scores.values())
+            new_row = pd.DataFrame([row], columns=data.columns)
+            data = pd.concat([data, new_row], ignore_index=True)
+        
+        return data
+
+
     def create_scores_df(self):
         scorer_obj = boardEval()
         features = scorer_obj.get_features()
@@ -206,6 +226,18 @@ class game_analyzer:
 
 
 
+    def create_scores_df_cnn(self):
+        scorer_obj = boardCnnEval()
+        features = scorer_obj.get_features()
+        features = ["moves(id)"] + features
+        # Create a DataFrame with the specified column headers
+        df = pd.DataFrame(columns=features)
+
+        return df
+
+
+
+
     def process_sqlite_boards(self,db: Session = SessionLocal()):
         self.create_cnn_csv()
 
@@ -225,3 +257,17 @@ class game_analyzer:
 
                 except Exception as e:
                     raise Exception(e)
+
+    def process_single_fen_non_csv_cnn(self,board: chess.Board):
+        df = self.basedf_cnn.copy()
+        
+
+        game = board_to_GamePostition(board=board)
+
+        scores = self.cnn_evaluate_board(game=game)
+
+        row = [board.fen()]+list(scores.values())
+
+        new_row = pd.DataFrame([row], columns=df.columns)
+        
+        return new_row

@@ -28,7 +28,7 @@ class mcts():
         ans = curr_node.v+sqrt(2)*(sqrt(log(curr_node.N+e+(10**-6))/(curr_node.n+(10**-10))))
         return ans
 
-    def rollout(self,curr_node,max_depth: int = 10):
+    def rollout(self,curr_node,max_depth: int = 10,cnn:bool = False):
         depth = 0
         if(curr_node.state.is_game_over()):
             board = curr_node.state
@@ -59,13 +59,19 @@ class mcts():
 
         # Evaluate the board state at the final depth
         # The evaluation function needs to be defined based on your requirements
-        score = self.nn.score_board(curr_node.state)
-        if 0.5 - 0.1 <= score <= 0.5 + 0.1:
-            #trying best to get rid of stalemates
-            score = 0
+        if cnn:
+            score = self.nn.score_board_cnn(curr_node.state)
+            score = score['white'] - score['black']
+            score = 4 * score.values[0]
+            
         else:
-            #mapping [0,1] to [-1,1]
-            score = (-1 + (2 * round(score,0)))
+            score = self.nn.score_board(curr_node.state)
+            if 0.5 - 0.1 <= score <= 0.5 + 0.1:
+                #trying best to get rid of stalemates
+                score = 0
+            else:
+                #mapping [0,1] to [-1,1]
+                score = (-1 + (2 * round(score,0)))
 
         return score, curr_node
 
@@ -107,7 +113,7 @@ class mcts():
             curr_node = curr_node.parent
         return curr_node
 
-    def mcts_pred(self,curr_node,over,white,preferred_moves: list = None,iterations: int = 10,max_depth: int = 10):
+    def mcts_pred(self,curr_node,over,white,preferred_moves: list = None,iterations: int = 10,max_depth: int = 10,cnn:bool = False):
         if(over):
             return 0
         if preferred_moves:
@@ -140,7 +146,7 @@ class mcts():
                         max_ucb = tmp
                         sel_child = i
                 ex_child = self.expand(sel_child,0)
-                reward,state = self.rollout(curr_node=ex_child,max_depth=max_depth)
+                reward,state = self.rollout(curr_node=ex_child,max_depth=max_depth,cnn=cnn)
                 curr_node = self.rollback(state,reward)
                 iterations-=1
             else:
@@ -156,7 +162,7 @@ class mcts():
 
                 ex_child = self.expand(sel_child,1)
 
-                reward,state = self.rollout(ex_child,max_depth=max_depth)
+                reward,state = self.rollout(ex_child,max_depth=max_depth,cnn=cnn)
 
                 curr_node = self.rollback(state,reward)
                 iterations-=1
@@ -202,9 +208,12 @@ class mcts():
 
 
 
-    def mcts_best_move(self,board: chess.Board,preferred_moves: list = None,iterations=100,max_depth: int = 10):
+    def mcts_best_move(self,board: chess.Board,preferred_moves: list = None,cnn:bool = False,iterations=100,max_depth: int = 10):
         if len(preferred_moves) == 1:
-            return ast.literal_eval(preferred_moves[0])[0]
+            if not cnn:
+                return ast.literal_eval(preferred_moves[0])[0]
+            else:
+                return ast.literal_eval(preferred_moves.values[0])[0]
         root = node()
         root.state = board
         is_white_to_move = board.turn
@@ -212,7 +221,7 @@ class mcts():
 
         best_move_uci = self.mcts_pred(curr_node=root,over=board.is_game_over(),
                                 white=is_white_to_move,preferred_moves=preferred_moves,
-                                    iterations=iterations,max_depth=max_depth)
+                                    iterations=iterations,max_depth=max_depth,cnn=cnn)
         if best_move_uci[-1] in ['b','r','n']:
             best_move_uci = best_move_uci[:-1] + 'q'
 

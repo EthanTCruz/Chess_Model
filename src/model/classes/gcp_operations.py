@@ -14,7 +14,7 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     # destination_blob_name = "storage-object-name"
     path_credentials = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
     if path_credentials == '/var/secrets/google/key.json':
-        with (path_credentials, 'r') as file:
+        with open(path_credentials, 'r') as file:
             encoded_secret = file.read()
 
             decoded_secret = base64.b64decode(encoded_secret)
@@ -26,7 +26,7 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
             storage_client = storage.Client(credentials=credentials)
     else:
         storage_client = storage.Client()
-        
+
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
 

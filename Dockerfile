@@ -22,6 +22,7 @@ ENV trainModel True
 ENV selfTrain True
 ENV GOOGLE_APPLICATION_CREDENTIALS '/var/secrets/google/key.json'
 ENV BUCKET_NAME "chess-model-weights"
+ENV saveToBucket True
 
 #CMD ["python","./Chess_Model/src/model/main.py"]
 CMD while true; do sleep 10; done
