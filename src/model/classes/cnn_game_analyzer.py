@@ -106,6 +106,7 @@ class game_analyzer:
                 try:
                     if game is None:
                         return 1
+
                     scores = self.evaluate_board(game=game)
                     row = list(scores.values())
                     writer.writerow(row)
