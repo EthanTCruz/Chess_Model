@@ -4,7 +4,7 @@ import csv
 import os
 import pandas as pd
 from sqlalchemy.orm import  Session
-from Chess_Model.src.model.classes.scorer import boardEval
+from Chess_Model.src.model.classes.pre_cnn.scorer import boardEval
 from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
 from tqdm import tqdm
 from Chess_Model.src.model.config.config import Settings

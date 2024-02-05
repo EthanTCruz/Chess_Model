@@ -80,7 +80,7 @@ class data_generator():
         self.validation_size = s.nnValidationSize
         
 
-    def get_cnn_shape(self):
+    def get_shape_cnn(self):
         return self.cnn_shape
 
     def get_shape(self):
@@ -384,11 +384,13 @@ class data_generator():
     def dataset_from_generator_cnn(self,filename,batch_size: int = None):
         if batch_size is None:
             batch_size = self.batch_size
-
+        shapes = self.cnn_shape
+        matrix_shape = shapes[0]
+        meta_shape = shapes[0]
         dataset = tf.data.Dataset.from_generator(
             lambda: self.scaled_data_generator_cnn(filename=filename, batch_size=batch_size),
             output_types=((tf.float32, tf.float32),tf.float32),  # Update these types based on your data
-            output_shapes=(([None, 8, 8, 14], [None, 6]), [None, 3])  # Update shapes based on your data
+            output_shapes=(([None, 0, matrix_shape[1], matrix_shape[2]], [None, meta_shape[0]]), [None, 3])  # Update shapes based on your data
         )
         return dataset
                     

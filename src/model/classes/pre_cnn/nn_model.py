@@ -301,7 +301,7 @@ class neural_net():
         validation_batch = self.batch_size
         validation_samples = self.get_row_count(filename=self.validation_file)
         validation_steps = math.ceil(validation_samples/validation_batch)
-        shape = self.dataGenerator.get_cnn_shape()
+        shape = self.dataGenerator.get_shape_cnn()
         #test = next(self.dataGenerator.scaled_data_generator_cnn(batch_size=self.gen_batch_size,filename=self.train_file))
         
         matrix_shape =  Input(shape=shape[0])

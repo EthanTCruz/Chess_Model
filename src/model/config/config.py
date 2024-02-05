@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-
+from math import sqrt
 class Settings(BaseSettings, case_sensitive=True):
     redis_host: str = 'localhost'
     redis_port: int = 6379
@@ -34,9 +34,12 @@ class Settings(BaseSettings, case_sensitive=True):
     minimumEndgamePieces: int = 5
     trainModel: bool = False
     selfTrain: bool = False
-    trainDataExists: bool = True
+    trainDataExists: bool = False
     useSamplePgn: bool = True
     saveToBucket: bool = False
+
+    #MCST parameters:
+    UCB_Constant: float = 0.1
 
     copy_file: str = f"{srcModelDirectory}/data/copy_data.csv"
     trainingFile: str = f"{srcModelDirectory}/data/training.csv"

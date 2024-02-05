@@ -8,7 +8,7 @@ import os
 import chess
 from Chess_Model.src.model.config.config import Settings
 import random
-from Chess_Model.src.model.classes.move_picker import move_picker
+from Chess_Model.src.model.classes.cnn_move_picker import move_picker
 
 import chess.pgn
 import ast

@@ -21,11 +21,17 @@ class boardCnnEval:
             self.board = board
             self.fen = board.fen()
         self.fen_components = fen.split(" ") 
+    
 
 
     def setup_parameters_gamepositions(self,game: GamePositions):
-        self.game = game
+        self.game = game  
         self.board = chess.Board(self.game.piece_positions)
+        if self.game.turn == 'b':
+            self.board.turn = chess.BLACK
+            self.board.halfmove_clock = 2
+            self.board.fullmove_number = 1
+
 
     def get_features(self):
         scores = self.get_board_scores()
@@ -67,20 +73,58 @@ class boardCnnEval:
         dict_results["black queenside castle"] = black_kingside
         dict_results["black kingside castle"] = black_kingside
 
+        is_endgame = self.is_endgame()
+        if is_endgame == 1:
+            endgame_scores = self.endgame_status()
+        else:
+            endgame_scores = [0,0]
+
+        dict_results["white wdl"] = endgame_scores[0]
+        dict_results["black wdl"] = endgame_scores[1]
+
+
         game_results.append(white_queenside)
         game_results.append(white_kingside)
         game_results.append(black_queenside)
         game_results.append(black_kingside)                        
-        
-
-
-
         game_results.append(self.game.greater_than_n_half_moves)
 
 
 
         
         return dict_results
+    
+    def is_endgame(self):
+
+        count = self.ep.count_pieces(board=self.board)
+
+        if count <= self.endgameAmount:
+            return 1
+        else:
+            return 0
+
+    def endgame_status(self):
+        w_or_b = [0,0]
+
+        results = self.ep.endgame_status(board=self.board)
+        if results > 0:
+            if self.board.turn:
+                w_or_b[0] = 1
+            else:
+                w_or_b[1] = 1
+
+        elif results < 0:
+            if self.board.turn:
+                w_or_b[1] = 1
+            else:
+                w_or_b[0] = 1
+
+        return w_or_b
+    def open_tables(self):
+        self.ep.open_tables()
+
+    def close_tables(self):
+        self.ep.close_tables()
 
     def get_game_results(self):
         results = []
