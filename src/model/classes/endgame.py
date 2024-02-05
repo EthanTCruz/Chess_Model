@@ -40,6 +40,7 @@ class endgamePicker():
             results = result
         return results
 
+
     def find_endgame_best_move_dtz(self,board: chess.Board):
         temp = board.copy()
 

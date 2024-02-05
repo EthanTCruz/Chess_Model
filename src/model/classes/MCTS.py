@@ -2,10 +2,9 @@ import chess
 import chess.pgn
 import chess.engine
 import random
-import time
 from math import log,sqrt,e,inf
 import ast
-from Chess_Model.src.model.classes.nn_model import neural_net 
+from Chess_Model.src.model.config.config import Settings
 
 
 
@@ -21,14 +20,17 @@ class node():
 
 class mcts():
 
-    def __init__(self,neuralNet: neural_net) -> None:
+    def __init__(self,neuralNet,constant:float = None) -> None:
+        s = Settings()
         self.nn = neuralNet
+        if constant is None:
+            self.c = s.UCB_Constant
 
     def ucb1(self,curr_node):
-        ans = curr_node.v+sqrt(2)*(sqrt(log(curr_node.N+e+(10**-6))/(curr_node.n+(10**-10))))
+        ans = curr_node.v+self.c*(sqrt(log(curr_node.N+e+(10**-6))/(curr_node.n+(10**-10))))
         return ans
 
-    def rollout(self,curr_node,max_depth: int = 10,cnn:bool = False):
+    def rollout(self,curr_node,white: bool, max_depth: int = 10,cnn:bool = False):
         depth = 0
         if(curr_node.state.is_game_over()):
             board = curr_node.state
@@ -60,9 +62,12 @@ class mcts():
         # Evaluate the board state at the final depth
         # The evaluation function needs to be defined based on your requirements
         if cnn:
-            score = self.nn.score_board_cnn(curr_node.state)
-            score = score['white'] - score['black']
-            score = 4 * score.values[0]
+            score = self.nn.score_board(curr_node.state)
+            if white:
+                score = score['white'].values[0]
+            else:
+                score = -score['black'].values[0]
+
             
         else:
             score = self.nn.score_board(curr_node.state)
@@ -146,7 +151,7 @@ class mcts():
                         max_ucb = tmp
                         sel_child = i
                 ex_child = self.expand(sel_child,0)
-                reward,state = self.rollout(curr_node=ex_child,max_depth=max_depth,cnn=cnn)
+                reward,state = self.rollout(curr_node=ex_child,max_depth=max_depth,cnn=cnn,white=white)
                 curr_node = self.rollback(state,reward)
                 iterations-=1
             else:
@@ -162,7 +167,7 @@ class mcts():
 
                 ex_child = self.expand(sel_child,1)
 
-                reward,state = self.rollout(ex_child,max_depth=max_depth,cnn=cnn)
+                reward,state = self.rollout(ex_child,max_depth=max_depth,cnn=cnn,white=white)
 
                 curr_node = self.rollback(state,reward)
                 iterations-=1
