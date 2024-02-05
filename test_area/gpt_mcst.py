@@ -1,6 +1,6 @@
 import random
 import chess
-
+import math
 class MCTSNode:
     def __init__(self, board, parent=None):
         self.board = board
