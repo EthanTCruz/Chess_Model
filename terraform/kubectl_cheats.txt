@@ -19,8 +19,8 @@ Get-FileHash -Path "C:\Users\ethan\Downloads\models_20240203-103818-model (1).ke
 docker build . -t chess_model
 docker run chess_model:latest
 docker exec -it reverent_bohr /bin/bash
-docker tag chess_model ethancruz/chess_model:v1.0.10
-docker push ethancruz/chess_model:v1.0.10
+docker tag chess_model ethancruz/chess_model:v1.0.11
+docker push ethancruz/chess_model:v1.0.11
 
 tmux new -s train
 tmux attach -t train

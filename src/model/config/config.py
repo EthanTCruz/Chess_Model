@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from math import sqrt
-class Settings(BaseSettings, case_sensitive=True):
+class Settings(BaseSettings):
     redis_host: str = 'localhost'
     redis_port: int = 6379
     redis_score_db: int = 1

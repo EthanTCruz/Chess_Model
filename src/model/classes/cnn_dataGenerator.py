@@ -211,7 +211,8 @@ class data_generator():
             for chunk in data:
                     X, Y, matrixData = self.clean_data(chunk)
                     X_scaled = scaler.transform(X)
-                    matrixData_scaled = matrixData.applymap(reshape_to_matrix)
+                    matrixData_scaled = matrixData.stack().map(reshape_to_matrix).unstack()
+
                     output_matrices = np.stack(matrixData_scaled.apply(lambda row: np.stack(row, axis=-1), axis=1).to_numpy())
 
                     #matrixData_scaled = matrixScaler.transform(matrixData)

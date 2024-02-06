@@ -41,3 +41,6 @@ variable "bucket_location" {
 variable "storage_class" {
   type = string
 }
+variable "machine_size" {
+  type = number
+}

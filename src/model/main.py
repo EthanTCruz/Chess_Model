@@ -16,7 +16,7 @@ from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.model_trainer import trainer
 from Chess_Model.src.model.classes.endgame import endgamePicker
 
-from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
+
 from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator as cnn_data_generator
 from Chess_Model.src.model.classes.cnn_game_analyzer import game_analyzer as cnn_game_analyzer
 from Chess_Model.src.model.classes.cnn_model import convolutional_neural_net as cnn_model
