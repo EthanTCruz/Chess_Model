@@ -234,7 +234,7 @@ class data_generator():
     
     def dataset_from_generator(self,filename,batch_size: int = None):
         if batch_size is None:
-            batch_size = self.batch_size
+            batch_size = self.gen_batch_size
         shapes = self.shape
         matrix_shape = shapes[0]
         meta_shape = shapes[1]

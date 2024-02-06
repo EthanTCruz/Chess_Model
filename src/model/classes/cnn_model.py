@@ -198,11 +198,9 @@ class convolutional_neural_net():
         model = self.create_model(shapes_tuple=shape)
 
         train_dataset = self.dataGenerator.dataset_from_generator(
-                filename=self.train_file,
-                batch_size=batch_size)
+                filename=self.train_file)
         validation_dataset = self.dataGenerator.dataset_from_generator(
-                filename=self.validation_file,
-                batch_size=batch_size)
+                filename=self.validation_file)
 
 
         
@@ -215,8 +213,7 @@ class convolutional_neural_net():
         # Evaluate the model on the test set
 
         test_dataset = self.dataGenerator.dataset_from_generator(
-                filename=self.test_file,
-                batch_size=batch_size,)
+                filename=self.test_file)
         
         test_size = self.dataGenerator.test_dataset_size(filename=self.test_file)
         steps = math.ceil((test_size - 1) / batch_size)
