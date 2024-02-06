@@ -4,7 +4,7 @@ src/model/chess_model/*
 
 Chess_Model/src/model/data/games.csv
 src/model/data/data.csv
-**/EndgameTbl/**
+
 src/model/data/self_play.pgn
 src/model/chess_modelmodel.h5
 src/model/chess_model/model.h5
@@ -22,7 +22,9 @@ src/model/data/training.csv
 src/model/data/testing.csv
 **secret.json**
 src/model/data/*
-src/model/data/**
+src/model/data/EndgameTbl/*
+!src/model/data/EndgameTbl/
+terraform/single_vm/*
 **/.terraform/*
 terraform/tf.log
 src/model/data/gameData.db

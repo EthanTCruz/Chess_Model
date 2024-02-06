@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_score_db: int = 1
     
-    nnGenBatchSize: int = 8192
+    nnGenBatchSize: int = 1
     nnBatchSize: int = 100
     nnEpochs: int = 100
     nnTestSize: float = 0.15
@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     minimumEndgamePieces: int = 5
     trainModel: bool = False
     selfTrain: bool = False
-    trainDataExists: bool = False
-    useSamplePgn: bool = True
+    trainDataExists: bool = True
+    useSamplePgn: bool = False
     saveToBucket: bool = False
 
     #MCST parameters:
