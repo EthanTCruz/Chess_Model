@@ -190,6 +190,10 @@ class convolutional_neural_net():
         return steps_per_epoch, validation_steps,batch_size
 
     def create_and_evaluate_model(self):
+        gpus = tf.config.list_physical_devices('GPU')
+        if len(gpus) > 0:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
         #self.dataGenerator.initialize_cnn_datasets()
         steps_per_epoch,validation_steps,batch_size = self.calc_step_sizes()
         shape = self.dataGenerator.get_shape()
