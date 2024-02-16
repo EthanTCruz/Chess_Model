@@ -11,7 +11,7 @@ from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_b
 import math
 from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator
 from datetime import datetime
-from tensorflow.keras.layers import Input, Dense, Conv2D, Flatten, Concatenate
+from tensorflow.keras.layers import Input, Conv2D, Dense, Flatten, Concatenate, BatchNormalization, Add, Activation, MaxPooling2D, GlobalAveragePooling2D, Multiply
 from tensorflow.keras.models import Model
 
 
@@ -129,6 +129,8 @@ class convolutional_neural_net():
         self.gcp_creds = s.GOOGLE_APPLICATION_CREDENTIALS
         self.bucket_name = s.BUCKET_NAME
         self.saveToBucket = s.saveToBucket
+        self.log_dir = s.nnLogDir
+        self.checkpoints = s.nnModelCheckpoint
 
 
     def load_scaler(self):
@@ -157,21 +159,25 @@ class convolutional_neural_net():
     def create_model(self,shapes_tuple):
         matrix_shape =  Input(shape=shapes_tuple[0])
         metadata_shape = Input(shape=shapes_tuple[1])
-        # Convolutional layers for chessboard
-        conv1 = Conv2D(filters=64, kernel_size=(3, 3), activation='relu')(matrix_shape)
-        conv2 = Conv2D(filters=64, kernel_size=(3, 3), activation='relu')(conv1)
-        flattened = Flatten()(conv2)
+            # Convolutional layers for chessboard
 
-        # Dense layers for metadata
-        meta_dense = Dense(64, activation='relu')(metadata_shape)
 
-        # Combine outputs
-        combined = Concatenate()([flattened, meta_dense])
 
-        # Additional dense layers
+        conv = Conv2D(filters=64, kernel_size=(3, 3), activation='relu')(matrix_shape)
+        flattened = Flatten()(conv)
+        normalized = BatchNormalization()(flattened)
+        activation = Activation('relu')(normalized)
+
+        #Use global average pooling, will also work to substitute flatten
+
+        # Second branch with additional input
+        meta_input = Dense(32, activation='relu')(metadata_shape)
+        meta_dense = Dense(32, activation='relu')(meta_input)
+
+        # Concatenate both branches
+        combined = Concatenate()([activation, meta_dense])
         dense1 = Dense(128, activation='relu')(combined)
         dense2 = Dense(64, activation='relu')(dense1)
-
         # Output layer
         output = Dense(3, activation='softmax')(dense2)
 
@@ -190,6 +196,14 @@ class convolutional_neural_net():
         return steps_per_epoch, validation_steps,batch_size
 
     def create_and_evaluate_model(self):
+        tensorboard_callback =  tf.keras.callbacks.TensorBoard(log_dir=self.log_dir, 
+                                                               histogram_freq=1,
+                                                                write_graph=True,
+                                                                write_images=True)
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=self.checkpoints,
+                                                 save_weights_only=True,
+                                                 verbose=1)
+        #tensorboard --logdir='C:\Users\ethan\git\Full_Chess_App\Chess_Model\logs'
         gpus = tf.config.list_physical_devices('GPU')
         if len(gpus) > 0:
             for gpu in gpus:
@@ -213,7 +227,8 @@ class convolutional_neural_net():
                   steps_per_epoch=steps_per_epoch,
                   epochs=self.epochs, 
                   validation_data=validation_dataset,
-                  validation_steps=validation_steps)
+                  validation_steps=validation_steps,
+                  callbacks=[tensorboard_callback,cp_callback])
         # Evaluate the model on the test set
 
         test_dataset = self.dataGenerator.dataset_from_generator(

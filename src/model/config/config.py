@@ -1,11 +1,8 @@
 from pydantic_settings import BaseSettings
 from math import sqrt
-class Settings(BaseSettings):
-    redis_host: str = 'localhost'
-    redis_port: int = 6379
-    redis_score_db: int = 1
-    
+class Settings(BaseSettings): 
     nnGenBatchSize: int = 1
+    nnScalarBatchSize: int = 10
     nnBatchSize: int = 100
     nnEpochs: int = 100
     nnTestSize: float = 0.15
@@ -26,6 +23,8 @@ class Settings(BaseSettings):
     samplePgn: str = f"{srcModelDirectory}/pgn/sample.pgn"
     nnPredictionsCSV: str = f"{srcModelDirectory}/data/nn_predictions.csv"
     selfTrainBaseMoves: str = f"{srcModelDirectory}/data/simGames.csv"
+    nnLogDir: str = "./Chess_Model/logs/"
+    nnModelCheckpoint: str = f"{ModelFilePath}checkpoints/"
 
     #should run under assumption score depth will always be greater than mate depth
     score_depth: int = 1
@@ -35,7 +34,7 @@ class Settings(BaseSettings):
     trainModel: bool = False
     selfTrain: bool = False
     trainDataExists: bool = True
-    useSamplePgn: bool = False
+    useSamplePgn: bool = True
     saveToBucket: bool = False
 
     #MCST parameters:
@@ -52,6 +51,7 @@ class Settings(BaseSettings):
     matrixScalerFile: str = f"{srcModelDirectory}/data/matrixScaler.joblib"
 
     halfMoveBin: int = 25
+    
     class Config:
         env_prefix = ''
 

@@ -183,7 +183,7 @@ def tune_parameters():
         dg.initialize_datasets()
         del dg
 
-    epoch_sizes = [8,16,32,64,128]
+    epoch_sizes = [16,32,64,128]
     batch_sizes = [128,512,1024,2048,5012]
     for b in batch_sizes:
         for e in epoch_sizes:

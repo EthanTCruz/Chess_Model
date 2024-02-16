@@ -14,8 +14,6 @@ class GamePositions(Base):
     #0 for false, 1 for true
     greater_than_n_half_moves = Column(Integer, index=True)
 
-    #0, 1, 2, 3
-    repeated_position = Column(Integer, index=True)
 
     white_wins = Column(Integer)
     black_wins = Column(Integer)
