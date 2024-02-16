@@ -78,6 +78,7 @@ class data_generator():
         self.copy_data = s.copy_file
         self.validation_file = s.validationFile
         self.validation_size = s.nnValidationSize
+        self.scalarBatchSize = s.nnScalarBatchSize
         
 
     def get_shape(self):
@@ -159,6 +160,8 @@ class data_generator():
 
     def clean_data(self, data):
         # Create DataFrame for columns with 'positions' suffix
+        if data is None:
+            return None,None,None
         matrix_data = pd.DataFrame()
         for col in data.columns:
             if col.endswith('positions'):
@@ -178,17 +181,23 @@ class data_generator():
         #matrixScaler = StandardScaler()
         
         limit = self.get_row_count(self.train_file)
-        adjusted_limit = math.ceil(limit/self.gen_batch_size)
+        adjusted_limit = math.ceil(limit/self.scalarBatchSize)
         batch_amt = 0
-        batches = self.data_generator(batch_size=self.gen_batch_size,filename=self.train_file)
+        batches = self.data_generator(batch_size=self.scalarBatchSize,filename=self.train_file)
         for batch in  tqdm(batches, total=adjusted_limit, desc="Creating Scalar"):
             if batch_amt > (limit-1):
                 break
             else:
                 #if end up needing matrix scaling, this line should be replaced with splitting matrix into n col name and value for 64 new columns per 8x8
-                #matrixScaler.partial_fit(batch[2])
+                    # t = []
+                    # for value in batch[0].values:
+                    #     tmp = []
+                    #     for mat in value:
+                    #         tmp+=mat
+                    #     t.append(tmp)
+                #matrixScaler.partial_fit(batch[0].values)
                 scaler.partial_fit(batch[1])
-                batch_amt += self.gen_batch_size
+                batch_amt += self.scalarBatchSize
         self.init_scaler(scaler=scaler)
         #self.init_scaler(scaler=matrixScaler,scalarFile=self.matrixScalerFile)
         return scaler
@@ -240,7 +249,7 @@ class data_generator():
         meta_shape = shapes[1]
         dataset = tf.data.Dataset.from_generator(
             lambda: self.scaled_data_generator(filename=filename, batch_size=batch_size),
-            output_types=((tf.float32, tf.float32),tf.float32),  # Update these types based on your data
+            output_types=((tf.float16, tf.float16),tf.float16),  # Update these types based on your data
             output_shapes=(([None, matrix_shape[0], matrix_shape[1], matrix_shape[2]], [None, meta_shape[0]]), [None, 3])  # Update shapes based on your data
         )
         return dataset
@@ -250,8 +259,13 @@ def string_to_array(s):
     return np.array(ast.literal_eval(s))
 
 def flat_string_to_array(s):
+    
     cleaned_string = s.strip('[]\'').replace('\n', '')
-    integer_array = np.array([np.float32(num) for num in cleaned_string.split()])
+    if s is None:
+        print('s was none')
+        return None
+    integer_array = [np.float16(num) for num in cleaned_string.split()]
+
     return integer_array
 
 def reshape_to_matrix(cell):

@@ -4,14 +4,21 @@ import numpy as np
 from math import ceil
 from Chess_Model.src.model.classes.sqlite.dependencies import board_to_GamePostition
 from Chess_Model.src.model.classes.sqlite.models import GamePositions
+from Chess_Model.src.model.config.config import Settings
+from Chess_Model.src.model.classes.metadata_scorer import metaDataBoardEval
+
 
 class boardCnnEval:
     def __init__(self,fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',board: chess.Board = None):
+        self.half_move_amount = Settings().halfMoveBin
         self.setup_parameters(fen=fen,board=board)
         
         self.ep = endgamePicker()
         
         self.endgameAmount = 5
+
+        self.zeros_matrix = np.zeros((8,8),dtype=int)
+
 
     def setup_parameters(self,fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',board: chess.Board = None):
         self.fen = fen
@@ -21,16 +28,24 @@ class boardCnnEval:
             self.board = board
             self.fen = board.fen()
         self.fen_components = fen.split(" ") 
-    
+        return 0
 
 
     def setup_parameters_gamepositions(self,game: GamePositions):
         self.game = game  
-        self.board = chess.Board(self.game.piece_positions)
-        if self.game.turn == 'b':
-            self.board.turn = chess.BLACK
-            self.board.halfmove_clock = 2
-            self.board.fullmove_number = 1
+        #have to reconstruct full fen instead of just piece_positions
+        if game.greater_than_n_half_moves == 1:
+            half_moves = self.half_move_amount
+            full_moves = 2 * half_moves
+        else:
+            half_moves = 0
+            full_moves = half_moves
+
+        fen = f"{game.piece_positions} {game.turn} {game.castling_rights} {game.en_passant} {half_moves} {full_moves}"
+        
+        self.board = chess.Board(fen)
+
+        return 0
 
 
     def get_features(self):
@@ -39,9 +54,10 @@ class boardCnnEval:
         return features
 
     def get_metadata(self):
-        dict_results = {}
+        metaDataEvaluator = metaDataBoardEval(game=self.game)
+        
+        dict_results = metaDataEvaluator.get_board_scores()
 
-        game_results = []
         turn = self.game.turn
 
         white_turn = 1 if turn == 'w' else 0
@@ -50,50 +66,20 @@ class boardCnnEval:
         dict_results["white turn"] = white_turn
         dict_results["black turn"] = black_turn
 
-        game_results.append(white_turn)
-        game_results.append(black_turn)
 
-        white_queenside = 0
-        black_queenside = 0
-        white_kingside = 0
-        black_kingside = 0
-
-        for rights in self.game.castling_rights:
-            if rights == 'q':
-                black_queenside = 1
-            elif rights == 'Q':
-                white_queenside = 1
-            elif rights == 'k':
-                black_kingside = 1
-            elif rights == 'K':
-                white_kingside = 1
-
-        dict_results["white queenside castle"] = white_queenside
-        dict_results["white kingside castle"] = white_queenside
-        dict_results["black queenside castle"] = black_kingside
-        dict_results["black kingside castle"] = black_kingside
-
-        is_endgame = self.is_endgame()
-        if is_endgame == 1:
-            endgame_scores = self.endgame_status()
-        else:
-            endgame_scores = [0,0]
-
-        dict_results["white wdl"] = endgame_scores[0]
-        dict_results["black wdl"] = endgame_scores[1]
-
-
-        game_results.append(white_queenside)
-        game_results.append(white_kingside)
-        game_results.append(black_queenside)
-        game_results.append(black_kingside)                        
-        game_results.append(self.game.greater_than_n_half_moves)
-
-
-
-        
+ 
         return dict_results
     
+    def en_passant_board(self):
+        zeros = self.zeros_matrix.copy()
+        if self.game.en_passant != '-':
+        # There is a potential en passant target
+            target_square = chess.parse_square(self.game.en_passant)
+            row, col = divmod(target_square, 8)
+            zeros[row, col] = 1
+        return zeros
+
+
     def is_endgame(self):
 
         count = self.ep.count_pieces(board=self.board)
@@ -136,28 +122,44 @@ class boardCnnEval:
         dict_results["stalemate mean"] = means[2]
         return dict_results
 
-    def get_board_scores(self,victor="NA"):
+    def get_board_scores(self):
         dict_results = {}
-        results = []
+
         metadata = self.get_metadata()
+
         game_results = self.get_game_results()
-        board = chess.Board(self.game.piece_positions)
-        piece_locations = self.get_all_piece_locations(original_board=board)
-        dict_results.update(piece_locations)
+
+        positions_data = self.get_positions()
+
         dict_results.update(metadata)
+
         dict_results.update(game_results)
+
+        dict_results.update(positions_data)
+
+        return dict_results
+    
+    def get_positions(self):
+        dict_results = {}
         # results += piece_locations
         white_attacks,black_attacks = self.w_b_attacks()
         # results.append(white_attacks)
         # results.append(black_attacks)
-        white_advantage = np.where(white_attacks > black_attacks, 1, 0)
-        black_advantage = np.where(black_attacks > white_attacks, 1, 0)
+        white_advantage = np.where(white_attacks > black_attacks, 0.5, 0)
+        black_advantage = np.where(black_attacks > white_attacks, 0.5, 0)
         # results.append(white_advantage)
         # results.append(black_advantage)
         dict_results["white advantage positions"] = white_advantage.flatten()
         dict_results["black advantage positions"] = black_advantage.flatten()
+
+        dict_results["castling positions"] = self.castling_abilities().flatten()
+        dict_results["en passant positions"] = self.en_passant_board().flatten()
+                
+        piece_locations = self.get_all_piece_locations(original_board=self.board)
+        dict_results.update(piece_locations)
         return dict_results
-    
+
+
     def piece_positons(self,white: bool,piece: str):
         if white:
             piece = piece.upper()
@@ -186,12 +188,29 @@ class boardCnnEval:
         dict_results["black queen positions"] = black_results[3].flatten()
         dict_results["black king positions"] = black_results[4].flatten()
         dict_results["black pawn positions"] = black_results[5].flatten()
+        
+        white_pieces = white_results[0]
+        for i in range(1,len(white_results)):
+            white_pieces += white_results[i]
+
+        black_pieces = black_results[0]
+        for i in range(1,len(black_results)):
+            black_pieces += black_results[i]
+
+        total_pieces = white_pieces - black_pieces
+        
+        dict_results["white positions"] = white_pieces.flatten()
+        dict_results["black positions"] = black_pieces.flatten()
+        dict_results["white black positions"] = total_pieces.flatten()
 
         return dict_results
-        
+
+    def all_team_piece_locations(self):
+        #white = 1, black = -1
+        return 0        
 
     def pieces_to_matrix(self,pieces, piece_map):
-        zeros = np.zeros((8,8),dtype=int)
+        zeros = self.zeros_matrix.copy()
         results = []
         for _ in range(6):
             results.append(np.copy(zeros))
@@ -205,15 +224,31 @@ class boardCnnEval:
                     row,col = sequence_to_rc(seq=key)
                     current_results[row][col] += 1
                     piece_map.pop(key)
+            current_results = current_results / 2
         return results
     
+    def castling_abilities(self):
+        zeros = self.zeros_matrix.copy()
+
+        for rights in self.game.castling_rights:
+            if rights == 'q':
+                zeros[0][2] = 1
+            elif rights == 'Q':
+                zeros[7][2] = 1
+            elif rights == 'k':
+                zeros[0][6] = 1                
+            elif rights == 'K':
+                zeros[7][6] = 1                
+
+        return zeros
+
     def w_b_attacks(self):
         white_attacks = self.calculate_square_attacks(white=True)
         black_attacks = self.calculate_square_attacks(white=False)
         return white_attacks, black_attacks
     
     def calculate_square_attacks(self,white:bool):
-        attack_matrix = np.zeros((8, 8),dtype=int)
+        attack_matrix = self.zeros_matrix.copy()
         pro = chess.WHITE if white else chess.BLACK
         # Iterate over all squares
         for square in chess.SQUARES:

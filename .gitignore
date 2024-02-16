@@ -31,11 +31,11 @@ src/model/data/gameData.db
 src/model/data/gameData.db-journal
 *.tfstate
 *.tfstate.*
-
-
+logs/*
+src/model/classes/.ipynb_checkpoints/*
 crash.log
 crash.*.log
-
+checkpoint
 *.tfvars
 *.tfvars.json
 override.tf

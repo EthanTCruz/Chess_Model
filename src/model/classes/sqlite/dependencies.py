@@ -51,8 +51,7 @@ def find_game(game_info: GamePositions,db: Session = get_db()):
                 GamePositions.castling_rights == game_info.castling_rights,
                 GamePositions.en_passant == game_info.en_passant,
                 GamePositions.turn == game_info.turn,
-                GamePositions.greater_than_n_half_moves == game_info.greater_than_n_half_moves,
-                GamePositions.repeated_position == game_info.repeated_position)
+                GamePositions.greater_than_n_half_moves == game_info.greater_than_n_half_moves)
             ).first()
     return results
 
@@ -75,10 +74,10 @@ def board_to_GamePostition(board: chess.Board,victor: str = "NA"):
     piece_positions = fen_components[0]
     turn = fen_components[1]
     castling_rights = fen_components[2]
-    en_passant = valid_en_passant(board=board,en_passant=fen_components[3])
+    en_passant = fen_components[3]
     half_move_clock = int(fen_components[4])
-    half_move_bin =  1 if half_move_clock > n_half_moves else  0
-    repeated_position = times_position_repeated(board=board)
+    half_move_bin =  1 if half_move_clock >= n_half_moves else  0
+
     white_wins = 0
     black_wins = 0
     stalemates = 0
@@ -95,25 +94,13 @@ def board_to_GamePostition(board: chess.Board,victor: str = "NA"):
         en_passant = en_passant,
         turn = turn,
         greater_than_n_half_moves = half_move_bin,
-        repeated_position = repeated_position,
         white_wins = white_wins,
         black_wins = black_wins,
         stalemates = stalemates
     )
 
     return game
-    
-def valid_en_passant(board: chess.Board,en_passant: str):
-    if en_passant != '-':
-        # There is a potential en passant target
-        target_square = chess.parse_square(en_passant)
 
-        # Iterate through all legal moves to find an en passant move
-        for move in board.legal_moves:
-            if move.to_square == target_square and board.is_en_passant(move):
-                return en_passant
-    else:
-        return en_passant
     
 def times_position_repeated(board: chess.Board):
     rep = 0
@@ -132,13 +119,12 @@ def fetch_all_game_positions(db: Session = next(get_db())):
         yield None
 
 class GamePositionWithWinBuckets:
-    def __init__(self, piece_positions, castling_rights, en_passant, turn, greater_than_n_half_moves, repeated_position, white_wins, black_wins, stalemates):
+    def __init__(self, piece_positions, castling_rights, en_passant, turn, greater_than_n_half_moves, white_wins, black_wins, stalemates):
         self.piece_positions = piece_positions
         self.castling_rights = castling_rights
         self.en_passant = en_passant
         self.turn = turn
         self.greater_than_n_half_moves = greater_than_n_half_moves
-        self.repeated_position = repeated_position
         self.white_wins = white_wins
         self.black_wins = black_wins
         self.stalemates = stalemates
@@ -154,7 +140,6 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
             GamePositions.en_passant, 
             GamePositions.turn, 
             GamePositions.greater_than_n_half_moves, 
-            GamePositions.repeated_position,
             func.sum(GamePositions.white_wins).label('white_wins'),
             func.sum(GamePositions.black_wins).label('black_wins'),
             func.sum(GamePositions.stalemates).label('stalemates'),
@@ -164,8 +149,7 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
             GamePositions.castling_rights, 
             GamePositions.en_passant, 
             GamePositions.turn, 
-            GamePositions.greater_than_n_half_moves, 
-            GamePositions.repeated_position
+            GamePositions.greater_than_n_half_moves
         )
 
         gen = query.yield_per(yield_size)
@@ -176,7 +160,6 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
                 castling_rights=result.castling_rights,
                 en_passant=result.en_passant,
                 turn=result.turn,
-                repeated_position=result.repeated_position,
                 greater_than_n_half_moves=result.greater_than_n_half_moves,
                 white_wins=result.white_wins,
                 black_wins=result.black_wins,
@@ -219,7 +202,6 @@ def get_rollup_row_count(db: Session = next(get_db())):
             GamePositions.en_passant, 
             GamePositions.turn, 
             GamePositions.greater_than_n_half_moves, 
-            GamePositions.repeated_position,
             func.sum(GamePositions.white_wins).label('white_wins'),
             func.sum(GamePositions.black_wins).label('black_wins'),
             func.sum(GamePositions.stalemates).label('stalemates'),
@@ -229,8 +211,7 @@ def get_rollup_row_count(db: Session = next(get_db())):
             GamePositions.castling_rights, 
             GamePositions.en_passant, 
             GamePositions.turn, 
-            GamePositions.greater_than_n_half_moves, 
-            GamePositions.repeated_position
+            GamePositions.greater_than_n_half_moves
         ).count()
         return count
     
