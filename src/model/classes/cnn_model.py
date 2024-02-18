@@ -165,8 +165,7 @@ class convolutional_neural_net():
 
         conv = Conv2D(filters=64, kernel_size=(3, 3), activation='relu')(matrix_shape)
         flattened = Flatten()(conv)
-        normalized = BatchNormalization()(flattened)
-        activation = Activation('relu')(normalized)
+
 
         #Use global average pooling, will also work to substitute flatten
 
@@ -175,7 +174,7 @@ class convolutional_neural_net():
         meta_dense = Dense(32, activation='relu')(meta_input)
 
         # Concatenate both branches
-        combined = Concatenate()([activation, meta_dense])
+        combined = Concatenate()([flattened, meta_dense])
         dense1 = Dense(128, activation='relu')(combined)
         dense2 = Dense(64, activation='relu')(dense1)
         # Output layer

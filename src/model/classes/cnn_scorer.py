@@ -145,8 +145,8 @@ class boardCnnEval:
         white_attacks,black_attacks = self.w_b_attacks()
         # results.append(white_attacks)
         # results.append(black_attacks)
-        white_advantage = np.where(white_attacks > black_attacks, 0.5, 0)
-        black_advantage = np.where(black_attacks > white_attacks, 0.5, 0)
+        white_advantage = np.where(white_attacks > black_attacks, 1, 0)
+        black_advantage = np.where(black_attacks > white_attacks, 1, 0)
         # results.append(white_advantage)
         # results.append(black_advantage)
         dict_results["white advantage positions"] = white_advantage.flatten()
@@ -157,6 +157,75 @@ class boardCnnEval:
                 
         piece_locations = self.get_all_piece_locations(original_board=self.board)
         dict_results.update(piece_locations)
+
+        attack_paths = self.get_attack_paths(original_board=self.board)
+        dict_results.update(attack_paths)
+
+        return dict_results
+
+    def attacks_to_matrix(self,pieces, moves,piece_map):
+        zeros = self.zeros_matrix.copy()
+        results = []
+        for _ in range(6):
+            results.append(np.copy(zeros))
+
+
+        for move in moves:
+            from_square = move.from_square
+            to_square = move.to_square
+            piece = piece_map[from_square]
+            for i in range(0,len(pieces)):
+                current_piece = pieces[i]
+                if piece == current_piece:
+                    row,col = divmod(to_square,8)
+                    results[i][row,col] = 1
+                    
+
+        return results
+
+    def get_attack_paths(self,original_board: chess.Board):
+        board = original_board.copy()
+        dict_results = {}
+        black_pieces = [chess.Piece.from_symbol('n'),chess.Piece.from_symbol('b'),chess.Piece.from_symbol('r'),chess.Piece.from_symbol('q'),chess.Piece.from_symbol('k'),chess.Piece.from_symbol('p')]
+        white_pieces = [chess.Piece.from_symbol('N'),chess.Piece.from_symbol('B'),chess.Piece.from_symbol('R'),chess.Piece.from_symbol('Q'),chess.Piece.from_symbol('K'),chess.Piece.from_symbol('P')]
+        piece_map = board.piece_map()
+
+        board.turn = True
+        moves = board.legal_moves
+        white_results = self.attacks_to_matrix(pieces=white_pieces,moves=moves,piece_map=piece_map)
+        
+        board.turn = False
+        moves = board.legal_moves
+        black_results = self.attacks_to_matrix(pieces=black_pieces,moves=moves,piece_map=piece_map)
+
+        dict_results["white knight attack positions"] = white_results[0].flatten()
+        dict_results["white bishop attack positions"] = white_results[1].flatten()
+        dict_results["white rook attack positions"] = white_results[2].flatten()
+        dict_results["white queen attack positions"] = white_results[3].flatten()
+        dict_results["white king attack positions"] = white_results[4].flatten()
+        dict_results["white pawn attack positions"] = white_results[5].flatten()
+
+        dict_results["black knight attack positions"] = black_results[0].flatten()
+        dict_results["black bishop attack positions"] = black_results[1].flatten()
+        dict_results["black rook attack positions"] = black_results[2].flatten()
+        dict_results["black queen attack positions"] = black_results[3].flatten()
+        dict_results["black king attack positions"] = black_results[4].flatten()
+        dict_results["black pawn attack positions"] = black_results[5].flatten()
+        
+        white_pieces = white_results[0]
+        for i in range(1,len(white_results)):
+            white_pieces += white_results[i]
+
+        black_pieces = black_results[0]
+        for i in range(1,len(black_results)):
+            black_pieces += black_results[i]
+
+        total_pieces = white_pieces - black_pieces
+        
+        dict_results["white attack positions"] = white_pieces.flatten()
+        dict_results["black attack positions"] = black_pieces.flatten()
+        dict_results["white black attack positions"] = total_pieces.flatten()
+
         return dict_results
 
 
@@ -207,8 +276,10 @@ class boardCnnEval:
 
     def all_team_piece_locations(self):
         #white = 1, black = -1
-        return 0        
+        return 0    
+        
 
+    
     def pieces_to_matrix(self,pieces, piece_map):
         zeros = self.zeros_matrix.copy()
         results = []
@@ -221,7 +292,7 @@ class boardCnnEval:
 
             for key in keys:
                 if piece_map[key] == current_piece:
-                    row,col = sequence_to_rc(seq=key)
+                    row,col = divmod(key,8)
                     current_results[row][col] += 1
                     piece_map.pop(key)
             current_results = current_results / 2
