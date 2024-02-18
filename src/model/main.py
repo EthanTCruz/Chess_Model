@@ -64,6 +64,7 @@ mp = cnn_move_picker(neuralNet=nn)
 
 def main():
     #test()
+    #test_process_fen()
     tune_parameters()
 
     # if s.trainModel:
