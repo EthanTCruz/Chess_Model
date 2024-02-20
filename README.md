@@ -97,3 +97,5 @@ Returns a set of squares that mask the rank, file or diagonal of the pin. If the
 
 is_pinned(color: chess.Color, square: chess.Square)→ bool[source]
 Detects if the given square is pinned to the king of the given color.
+
+tensorboard --logdir='C:\Users\ethan\git\Full_Chess_App\Chess_Model\logs'

@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     trainModel: bool = False
     selfTrain: bool = False
     trainDataExists: bool = True
-    useSamplePgn: bool = True
+    useSamplePgn: bool = False
     saveToBucket: bool = False
 
     #MCST parameters:
