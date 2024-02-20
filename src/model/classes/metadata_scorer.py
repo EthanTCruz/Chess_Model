@@ -84,16 +84,21 @@ class metaDataBoardEval:
             dict_results["white to black moves"] = 0
         else:
             dict_results["white to black moves"] = (moves["white"]/(moves["black"]))
+        if moves["white"] == 0:
+            dict_results["white to white moves"] = 0
+        else:
+            dict_results["white to white moves"] = (moves["black"]/(moves["white"]))
 
-        dict_results["white knight moves"] = moves["white N"]
-        dict_results["white bishop moves"] = moves["white B"]
-        dict_results["white rook moves"] = moves["white R"]
-        dict_results["white queen moves"] = moves["white Q"]
 
-        dict_results["black knight moves"] = moves["black N"]
-        dict_results["black bishop moves"] = moves["black B"]
-        dict_results["black rook moves"] = moves["black R"]
-        dict_results["black queen moves"] = moves["black Q"]
+        # dict_results["white knight moves"] = moves["white N"]
+        # dict_results["white bishop moves"] = moves["white B"]
+        # dict_results["white rook moves"] = moves["white R"]
+        # dict_results["white queen moves"] = moves["white Q"]
+
+        # dict_results["black knight moves"] = moves["black N"]
+        # dict_results["black bishop moves"] = moves["black B"]
+        # dict_results["black rook moves"] = moves["black R"]
+        # dict_results["black queen moves"] = moves["black Q"]
 
         '''
         dict_results["knight ratio"] = (dict_results["knight moves"]+1)/(dict_results["black knight moves"]+1)

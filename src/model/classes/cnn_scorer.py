@@ -127,16 +127,19 @@ class boardCnnEval:
 
         metadata = self.get_metadata()
 
-        game_results = self.get_game_results()
+
 
         positions_data = self.get_positions()
 
         dict_results.update(metadata)
 
-        dict_results.update(game_results)
+
 
         dict_results.update(positions_data)
+        
+        game_results = self.get_game_results()
 
+        dict_results.update(game_results)
         return dict_results
     
     def get_positions(self):

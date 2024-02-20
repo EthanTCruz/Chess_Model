@@ -11,9 +11,9 @@ from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_b
 import math
 from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator
 from datetime import datetime
-from tensorflow.keras.layers import Input, Conv2D, Dense, Flatten, Concatenate, BatchNormalization, Add, Activation, MaxPooling2D, GlobalAveragePooling2D, Multiply
+from tensorflow.keras.layers import Input, ReLU, Conv2D, Dense, Flatten, Concatenate, BatchNormalization, Add, Activation, MaxPooling2D, GlobalAveragePooling2D, Multiply
 from tensorflow.keras.models import Model
-
+import os
 
 class convolutional_neural_net():
 
@@ -159,26 +159,48 @@ class convolutional_neural_net():
     def create_model(self,shapes_tuple):
         matrix_shape =  Input(shape=shapes_tuple[0])
         metadata_shape = Input(shape=shapes_tuple[1])
-            # Convolutional layers for chessboard
+
+
+        # Convolutional layers
+        conv_layer = Conv2D(64,
+                            kernel_size=(3,3), 
+                            padding='same',
+                            strides=1, 
+                            activation='relu')(matrix_shape)
+
+        
+        conv_layer = Conv2D(128,
+                    kernel_size=(3,3), 
+                    padding='same',
+                    strides=1, 
+                    activation='relu')(conv_layer)
+
+
+        max_pooling_layer = MaxPooling2D(pool_size=(2, 2))(conv_layer)
+
+        conv_layer = Conv2D(128,
+                    kernel_size=(3,3), 
+                    padding='same',
+                    strides=1, 
+                    activation='relu')(max_pooling_layer)
+
+        # Fully connected layers
+        fc_conv_layer = Dense(128, activation='relu')(conv_layer)
+        fc_mp_layer = Dense(128, activation='relu')(conv_layer)
+
+        flat_conv = Flatten()(fc_conv_layer)
+        flat_mp = Flatten()(fc_mp_layer)
+        
+        combined_flats = Concatenate()([flat_conv,flat_mp,metadata_shape])
 
 
 
-        conv = Conv2D(filters=64, kernel_size=(3, 3), activation='relu')(matrix_shape)
-        flattened = Flatten()(conv)
+
+        flc = Dense(128,activation='relu')(combined_flats)
 
 
-        #Use global average pooling, will also work to substitute flatten
-
-        # Second branch with additional input
-        meta_input = Dense(32, activation='relu')(metadata_shape)
-        meta_dense = Dense(32, activation='relu')(meta_input)
-
-        # Concatenate both branches
-        combined = Concatenate()([flattened, meta_dense])
-        dense1 = Dense(128, activation='relu')(combined)
-        dense2 = Dense(64, activation='relu')(dense1)
         # Output layer
-        output = Dense(3, activation='softmax')(dense2)
+        output = Dense(3, activation='softmax')(flc)
 
         model = Model(inputs=[matrix_shape, metadata_shape], outputs=output)
 
@@ -194,7 +216,21 @@ class convolutional_neural_net():
         validation_steps = math.ceil(validation_samples/validation_batch)
         return steps_per_epoch, validation_steps,batch_size
 
+    def delete_files_in_directory(self,directory):
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    # Uncomment the following line if you also want to remove subdirectories
+                    # shutil.rmtree(file_path)
+                    pass
+            except Exception as e:
+                print(f'Failed to delete {file_path}. Reason: {e}')
+
     def create_and_evaluate_model(self):
+        self.delete_files_in_directory(directory=self.log_dir)
         tensorboard_callback =  tf.keras.callbacks.TensorBoard(log_dir=self.log_dir, 
                                                                histogram_freq=1,
                                                                 write_graph=True,

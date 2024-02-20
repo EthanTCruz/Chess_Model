@@ -79,6 +79,10 @@ class data_generator():
         self.validation_file = s.validationFile
         self.validation_size = s.nnValidationSize
         self.scalarBatchSize = s.nnScalarBatchSize
+
+
+
+
         
 
     def get_shape(self):
@@ -120,6 +124,8 @@ class data_generator():
     def initialize_datasets(self):
         self.copy_csv(source_file=self.filename, destination_file=self.copy_data)
         self.split_csv()
+        self.headers = pd.read_csv(self.train_file,nrows=0)
+        self.non_matrix_headers = [col for col in self.headers.columns if not col.endswith('positions')]
         self.create_scaler()
         self.shape = self.get_shape()
 
@@ -183,7 +189,7 @@ class data_generator():
         limit = self.get_row_count(self.train_file)
         adjusted_limit = math.ceil(limit/self.scalarBatchSize)
         batch_amt = 0
-        batches = self.data_generator(batch_size=self.scalarBatchSize,filename=self.train_file)
+        batches = self.data_generator_no_matrices(batch_size=self.scalarBatchSize,filename=self.train_file)
         for batch in  tqdm(batches, total=adjusted_limit, desc="Creating Scalar"):
             if batch_amt > (limit-1):
                 break
@@ -205,6 +211,16 @@ class data_generator():
     def data_generator(self, batch_size,filename):
         while True:  # Loop indefinitely
             data = pd.read_csv(filename, chunksize=batch_size)
+            for chunk in data:
+                X, Y, matrix_data = self.clean_data(chunk)
+                Y = np.array(Y)
+                #output = np.reshape(Y,(-1,1))
+                output = Y
+                yield (matrix_data, X, output )
+
+    def data_generator_no_matrices(self, batch_size,filename):
+        while True:  # Loop indefinitely
+            data = pd.read_csv(filename, chunksize=batch_size,usecols=self.non_matrix_headers)
             for chunk in data:
                 X, Y, matrix_data = self.clean_data(chunk)
                 Y = np.array(Y)
