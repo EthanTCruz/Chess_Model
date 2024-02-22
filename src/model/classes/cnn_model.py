@@ -11,8 +11,10 @@ from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_b
 import math
 from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator
 from datetime import datetime
-from tensorflow.keras.layers import Input, ReLU, Conv2D, Dense, Flatten, Concatenate, BatchNormalization, Add, Activation, MaxPooling2D, GlobalAveragePooling2D, Multiply
-from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Multiply, Input, Conv2D, MaxPooling2D, Dense, Flatten, Concatenate, Dropout, BatchNormalization, Add, GlobalAveragePooling2D
+from keras.models import Model
+from keras.activations import relu, softmax
+from keras.regularizers import l2
 import os
 
 class convolutional_neural_net():
@@ -157,53 +159,49 @@ class convolutional_neural_net():
             return sum(1 for line in file)
 
     def create_model(self,shapes_tuple):
-        matrix_shape =  Input(shape=shapes_tuple[0])
+        # Input layers
+        matrix_shape = Input(shape=shapes_tuple[0])
         metadata_shape = Input(shape=shapes_tuple[1])
 
+        # Convolutional layers with different kernel sizes
+        conv_layer = Conv2D(64, kernel_size=(3,3), padding='same', activation='relu')(matrix_shape)
+        conv_layer = BatchNormalization()(conv_layer)
+        conv_layer = Conv2D(128, kernel_size=(5,5), padding='same', activation='relu')(conv_layer)
+        conv_layer = BatchNormalization()(conv_layer)
 
-        # Convolutional layers
-        conv_layer = Conv2D(64,
-                            kernel_size=(3,3), 
-                            padding='same',
-                            strides=1, 
-                            activation='relu')(matrix_shape)
+        # Residual connection
+        shortcut = conv_layer
+        conv_layer = Conv2D(128, kernel_size=(3,3), padding='same', activation='relu')(conv_layer)
+        conv_layer = BatchNormalization()(conv_layer)
+        conv_layer = Add()([shortcut, conv_layer])
+        conv_layer = relu(conv_layer)
 
-        
-        conv_layer = Conv2D(128,
-                    kernel_size=(3,3), 
-                    padding='same',
-                    strides=1, 
-                    activation='relu')(conv_layer)
+        # Attention Mechanism (simplified version)
+        attention_layer = Dense(1, activation='softmax', name='attention')(conv_layer)
+        conv_layer = Multiply()([conv_layer, attention_layer])
 
+        # Global Average Pooling
+        gap_layer = GlobalAveragePooling2D()(conv_layer)
 
-        max_pooling_layer = MaxPooling2D(pool_size=(2, 2))(conv_layer)
+        # Fully connected layers for matrix processing
+        fc_matrix = Dense(128, activation='relu')(gap_layer)
+        fc_matrix = Dropout(0.5)(fc_matrix)
 
-        conv_layer = Conv2D(128,
-                    kernel_size=(3,3), 
-                    padding='same',
-                    strides=1, 
-                    activation='relu')(max_pooling_layer)
+        # Separate processing for metadata
+        fc_metadata = Dense(64, activation='relu')(metadata_shape)
+        fc_metadata = Dropout(0.5)(fc_metadata)
 
-        # Fully connected layers
-        fc_conv_layer = Dense(128, activation='relu')(conv_layer)
-        fc_mp_layer = Dense(128, activation='relu')(conv_layer)
+        # Concatenation with metadata
+        combined = Concatenate()([fc_matrix, fc_metadata])
 
-        flat_conv = Flatten()(fc_conv_layer)
-        flat_mp = Flatten()(fc_mp_layer)
-        
-        combined_flats = Concatenate()([flat_conv,flat_mp,metadata_shape])
-
-
-
-
-        flc = Dense(128,activation='relu')(combined_flats)
-
+        # Further dense layers
+        flc = Dense(128, activation='relu')(combined)
+        flc = Dropout(0.5)(flc)
 
         # Output layer
         output = Dense(3, activation='softmax')(flc)
 
         model = Model(inputs=[matrix_shape, metadata_shape], outputs=output)
-
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         return model
     

@@ -188,12 +188,15 @@ def tune_parameters():
     batch_sizes = [128,512,1024,2048,5012]
     for b in batch_sizes:
         for e in epoch_sizes:
+
             nn = cnn_model(filename=scores_file,target_feature=target_features,
                 test_size=test_size,ModelFilename = ModelFilename,
                 ModelFilePath=ModelFilePath,player='w',
                 predictions_board=predictions_board,epochs=e,
                 trainModel=s.trainModel,batch_size=b)
+            
             loss,accuracy = nn.create_and_evaluate_model()
+
             with open(eval_file, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 row = [e,b,loss,accuracy]
