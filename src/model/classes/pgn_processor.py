@@ -5,6 +5,7 @@ from Chess_Model.src.model.classes.sqlite.models import GamePositions
 from tqdm import tqdm
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 from sqlalchemy.orm import  Session
+import os
 
 class pgn_processor():
     def __init__(self,pgn_file,csv_file) -> None:
@@ -46,27 +47,32 @@ class pgn_processor():
                                     writer.writerow(row)   
 
     def pgn_fen_to_sqlite(self,db: Session = SessionLocal()):
-        total_games = count_games_in_pgn(pgn_file=self.pgn_file)
-        with open(self.pgn_file) as pgn:
-            for _ in tqdm(range(total_games), desc="Processing Games to DB"):
-                game = chess.pgn.read_game(pgn)
+        total_games = 0
+        for filename in os.listdir(self.pgn_file):
+            file = f"{self.pgn_file}{filename}"
+            total_games += count_games_in_pgn(pgn_file=file)
+        for filename in os.listdir(self.pgn_file):
+            file = f"{self.pgn_file}{filename}"
+            with open(file) as pgn:
+                for _ in tqdm(range(total_games), desc="Processing Games to DB"):
+                    game = chess.pgn.read_game(pgn)
 
-                if game is None:
-                    break  # end of file
-                board = game.board()
-                board_victors = []
-                victor = 'NA'
-                if game.headers["Result"] == '1-0':
-                    victor = 'w'
-                elif game.headers["Result"] == '0-1':
-                    victor = 'b'
-                elif game.headers["Result"] == '1/2-1/2':
-                    victor = 's'
+                    if game is None:
+                        break  # end of file
+                    board = game.board()
+                    board_victors = []
+                    victor = 'NA'
+                    if game.headers["Result"] == '1-0':
+                        victor = 'w'
+                    elif game.headers["Result"] == '0-1':
+                        victor = 'b'
+                    elif game.headers["Result"] == '1/2-1/2':
+                        victor = 's'
 
-                for move in game.mainline_moves():
-                    board.push(move=move)
-                    board_victors.append((board.copy(), victor))
-                insert_bulk_boards_into_db(board_victors=board_victors, db=db)
+                    for move in game.mainline_moves():
+                        board.push(move=move)
+                        board_victors.append((board.copy(), victor))
+                    insert_bulk_boards_into_db(board_victors=board_victors, db=db)
 
 
 def count_games_in_pgn(pgn_file):
