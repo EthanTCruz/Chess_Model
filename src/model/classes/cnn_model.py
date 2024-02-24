@@ -166,6 +166,7 @@ class convolutional_neural_net():
         # Convolutional layers with different kernel sizes
         conv_layer = Conv2D(64, kernel_size=(3,3), padding='same', activation='relu')(matrix_shape)
         global_pool = GlobalAveragePooling2D()(conv_layer)
+        global_pool = Flatten()(global_pool)
         conv_layer = BatchNormalization()(conv_layer)
         conv_layer = Conv2D(128, kernel_size=(5,5), padding='same', activation='relu')(conv_layer)
         conv_layer = BatchNormalization()(conv_layer)
@@ -179,7 +180,7 @@ class convolutional_neural_net():
 
         # Attention Mechanism (simplified version)
         attention_layer = Dense(1, activation='softmax', name='attention')(conv_layer)
-        conv_layer = Multiply()([conv_layer, attention_layer,global_pool])
+        conv_layer = Multiply()([conv_layer, attention_layer])
 
         # Global Average Pooling
         gap_layer = GlobalAveragePooling2D()(conv_layer)
@@ -193,10 +194,10 @@ class convolutional_neural_net():
         fc_metadata = Dropout(0.5)(fc_metadata)
 
         # Concatenation with metadata
-        combined = Concatenate()([fc_matrix, fc_metadata])
+        combined = Concatenate()([fc_matrix, fc_metadata,global_pool])
 
         # Further dense layers
-        flc = Dense(128, activation='relu')(combined)
+        flc = Dense(256, activation='relu')(combined)
         flc = Dropout(0.5)(flc)
 
         # Output layer
