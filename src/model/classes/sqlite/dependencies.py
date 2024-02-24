@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from typing import List, Tuple
 from sqlalchemy import or_, and_, func
 import chess
+import re
 
 n_half_moves = Settings().halfMoveBin
 
@@ -68,10 +69,14 @@ def get_game_info(game_info: GamePositions,db: Session = get_db()):
     stalemates = game.stalemates
     return white_wins,black_wins,stalemates
 
+def remove_bracketed_portion(s):
+    # This regex finds a portion enclosed in square brackets
+    return re.sub(r'\[.*?\]', '', s)
+
 def board_to_GamePostition(board: chess.Board,victor: str = "NA"):
     fen = board.fen()
     fen_components = fen.split(" ")
-    piece_positions = fen_components[0]
+    piece_positions = remove_bracketed_portion(fen_components[0])
     turn = fen_components[1]
     castling_rights = fen_components[2]
     en_passant = fen_components[3]
