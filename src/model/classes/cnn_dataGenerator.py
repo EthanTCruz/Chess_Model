@@ -83,10 +83,10 @@ class data_generator():
 
 
 
+
+
         
 
-    def get_shape(self):
-        return self.shape
 
 
     
@@ -255,7 +255,12 @@ class data_generator():
         matrix_shape = (8,8,matrix_channels)
         metadata_shape = (metadata_columns,)
         self.shape = [matrix_shape,metadata_shape]
-        return [matrix_shape,metadata_shape]
+
+        self.train_data = self.dataset_from_generator(filename=self.train_file)
+        self.test_data = self.dataset_from_generator(filename=self.test_file)
+        self.validation_data = self.dataset_from_generator(filename=self.validation_file)
+
+        return self.shape
     
     def dataset_from_generator(self,filename,batch_size: int = None):
         if batch_size is None:

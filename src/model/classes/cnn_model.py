@@ -165,6 +165,7 @@ class convolutional_neural_net():
 
         # Convolutional layers with different kernel sizes
         conv_layer = Conv2D(64, kernel_size=(3,3), padding='same', activation='relu')(matrix_shape)
+        global_pool = GlobalAveragePooling2D()(conv_layer)
         conv_layer = BatchNormalization()(conv_layer)
         conv_layer = Conv2D(128, kernel_size=(5,5), padding='same', activation='relu')(conv_layer)
         conv_layer = BatchNormalization()(conv_layer)
@@ -178,7 +179,7 @@ class convolutional_neural_net():
 
         # Attention Mechanism (simplified version)
         attention_layer = Dense(1, activation='softmax', name='attention')(conv_layer)
-        conv_layer = Multiply()([conv_layer, attention_layer])
+        conv_layer = Multiply()([conv_layer, attention_layer,global_pool])
 
         # Global Average Pooling
         gap_layer = GlobalAveragePooling2D()(conv_layer)
@@ -256,10 +257,10 @@ class convolutional_neural_net():
 
         
         # Train the model
-        history = model.fit(train_dataset,
+        history = model.fit(self.dataGenerator.train_data,
                   steps_per_epoch=steps_per_epoch,
                   epochs=self.epochs, 
-                  validation_data=validation_dataset,
+                  validation_data=self.dataGenerator.validation_data,
                   validation_steps=validation_steps,
                   callbacks=[tensorboard_callback,cp_callback])
         # Evaluate the model on the test set
@@ -269,7 +270,7 @@ class convolutional_neural_net():
         
         test_size = self.dataGenerator.test_dataset_size(filename=self.test_file)
         steps = math.ceil((test_size - 1) / batch_size)
-        loss, accuracy = model.evaluate(test_dataset,steps=steps)
+        loss, accuracy = model.evaluate(self.dataGenerator.test_data,steps=steps)
 
         model.save(filepath=self.ModelFile)
         

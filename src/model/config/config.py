@@ -13,14 +13,15 @@ class Settings(BaseSettings):
     ModelFilePath: str =f"{srcModelDirectory}/chess_model/"
     ModelFilename: str = "model.h5"
     scores_file: str = f"{srcModelDirectory}/data/data.csv"
-    pgn_file: str = f"{srcModelDirectory}/pgn/Adams.pgn"
+    pgn_file: str = f"{srcModelDirectory}/pgn/full_dataset/"
     games_csv_file: str = f"{srcModelDirectory}/data/games.csv"
     predictions_board: str = f"{srcModelDirectory}/data/predictions.csv"
     self_play: str = f"{srcModelDirectory}/data/self_play.pgn"
     persist_model: bool = True
     scaler_weights: str = f"{srcModelDirectory}/data/scaler.joblib"
     SelfPlayModelFilename: str ="self_play_model"
-    samplePgn: str = f"{srcModelDirectory}/pgn/sample.pgn"
+    
+    samplePgn: str = f"{srcModelDirectory}/pgn/sample_dataset/"
     nnPredictionsCSV: str = f"{srcModelDirectory}/data/nn_predictions.csv"
     selfTrainBaseMoves: str = f"{srcModelDirectory}/data/simGames.csv"
     nnLogDir: str = "./Chess_Model/logs/"
@@ -33,8 +34,8 @@ class Settings(BaseSettings):
     minimumEndgamePieces: int = 5
     trainModel: bool = False
     selfTrain: bool = False
-    trainDataExists: bool = True
-    useSamplePgn: bool = False
+    trainDataExists: bool = False
+    useSamplePgn: bool = True
     saveToBucket: bool = False
 
     #MCST parameters:
