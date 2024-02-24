@@ -11,6 +11,7 @@ from Chess_Model.src.model.classes.sqlite.dependencies import  fetch_all_game_po
 from Chess_Model.src.model.classes.sqlite.models import GamePositions
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 
+
 class game_analyzer:
     def __init__(self,**kwargs) -> None:
         self.set_parameters(kwargs=kwargs)
@@ -125,3 +126,4 @@ class game_analyzer:
         new_row = pd.DataFrame([row], columns=df.columns)
         
         return new_row
+

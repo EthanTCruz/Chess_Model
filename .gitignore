@@ -1,7 +1,9 @@
 .venv/
 **/__pycache__/
 src/model/chess_model/*
-
+!src/model/chess_model/
+!logs/
+!src/model/data/
 Chess_Model/src/model/data/games.csv
 src/model/data/data.csv
 

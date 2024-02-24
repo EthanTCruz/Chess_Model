@@ -47,14 +47,11 @@ class pgn_processor():
                                     writer.writerow(row)   
 
     def pgn_fen_to_sqlite(self,db: Session = SessionLocal()):
-        total_games = 0
         for filename in os.listdir(self.pgn_file):
             file = f"{self.pgn_file}{filename}"
-            total_games += count_games_in_pgn(pgn_file=file)
-        for filename in os.listdir(self.pgn_file):
-            file = f"{self.pgn_file}{filename}"
+            total_games = count_games_in_pgn(pgn_file=file)
             with open(file) as pgn:
-                for _ in tqdm(range(total_games), desc="Processing Games to DB"):
+                for _ in tqdm(range(total_games), desc=f"Processing {filename} Games to DB"):
                     game = chess.pgn.read_game(pgn)
 
                     if game is None:
