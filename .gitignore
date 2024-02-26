@@ -29,7 +29,7 @@ src/model/data/EndgameTbl/*
 terraform/single_vm/*
 **/.terraform/*
 terraform/tf.log
-src/model/data/gameData.db
+
 src/model/data/gameData.db-journal
 *.tfstate
 *.tfstate.*
