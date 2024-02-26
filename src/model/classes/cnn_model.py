@@ -164,37 +164,37 @@ class convolutional_neural_net():
         metadata_shape = Input(shape=shapes_tuple[1])
 
         # Convolutional layers with different kernel sizes
-        conv_layer = Conv2D(64, kernel_size=(3,3), padding='same', activation='relu')(matrix_shape)
+        conv_layer = Conv2D(256, kernel_size=(8,8), padding='same', activation='relu')(matrix_shape)
+
         global_pool = GlobalAveragePooling2D()(conv_layer)
-        global_pool = Flatten()(global_pool)
+
+
+        mp_layer = MaxPooling2D(pool_size=(2, 2),strides=(1,1),padding='valid')(conv_layer)
+        conv_mp_layer = Conv2D(64, kernel_size=(2,2), padding='same', activation='relu')(mp_layer)
+
+        
         conv_layer = BatchNormalization()(conv_layer)
-        conv_layer = Conv2D(128, kernel_size=(5,5), padding='same', activation='relu')(conv_layer)
-        conv_layer = BatchNormalization()(conv_layer)
+        conv_mp_layer = BatchNormalization()(conv_mp_layer)
 
-        # Residual connection
-        shortcut = conv_layer
-        conv_layer = Conv2D(128, kernel_size=(3,3), padding='same', activation='relu')(conv_layer)
-        conv_layer = BatchNormalization()(conv_layer)
-        conv_layer = Add()([shortcut, conv_layer])
-        conv_layer = relu(conv_layer)
 
-        # Attention Mechanism (simplified version)
-        attention_layer = Dense(1, activation='softmax', name='attention')(conv_layer)
-        conv_layer = Multiply()([conv_layer, attention_layer])
+        knight_layer = Conv2D(256, kernel_size=(3,3), padding='same', activation='relu')(matrix_shape)
+        knight_layer = BatchNormalization()(conv_layer)
 
-        # Global Average Pooling
-        gap_layer = GlobalAveragePooling2D()(conv_layer)
 
-        # Fully connected layers for matrix processing
-        fc_matrix = Dense(128, activation='relu')(gap_layer)
-        fc_matrix = Dropout(0.5)(fc_matrix)
+        pawn_layer = Conv2D(64, kernel_size=(2,2), padding='same', activation='relu')(matrix_shape)
+        pawn_layer = BatchNormalization()(conv_layer)
 
-        # Separate processing for metadata
+
         fc_metadata = Dense(64, activation='relu')(metadata_shape)
         fc_metadata = Dropout(0.5)(fc_metadata)
 
+        conv_layer_flat = Flatten()(conv_layer)
+        conv_mp_layer_flat = Flatten()(conv_mp_layer)
+        knight_layer_flat = Flatten()(knight_layer)
+        pawn_layer_flat = Flatten()(pawn_layer)
+        global_pool_flat = Flatten()(global_pool) 
         # Concatenation with metadata
-        combined = Concatenate()([fc_matrix, fc_metadata,global_pool])
+        combined = Concatenate()([conv_layer_flat,conv_mp_layer_flat,knight_layer_flat,pawn_layer_flat,global_pool_flat,fc_metadata])
 
         # Further dense layers
         flc = Dense(256, activation='relu')(combined)
