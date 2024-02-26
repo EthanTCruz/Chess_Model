@@ -80,7 +80,18 @@ def main():
 
     return 0
 
-
+def delete_files_in_directory(directory):
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                # Uncomment the following line if you also want to remove subdirectories
+                # shutil.rmtree(file_path)
+                pass
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
 
 def pgn_to_db(db: Session = SessionLocal()):
 
@@ -174,6 +185,7 @@ def get_sample_board():
 def tune_parameters():
     target_features = ["white mean","black mean","stalemate mean"]
     create_csv()
+    delete_files_in_directory(directory=s.nnLogDir)
     if not s.trainDataExists:
         pgn_to_db()
         dg = cnn_data_generator(filename=scores_file,target_feature=target_features,

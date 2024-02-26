@@ -11,11 +11,9 @@ from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_b
 import math
 from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator
 from datetime import datetime
-from tensorflow.keras.layers import Multiply, Input, Conv2D, MaxPooling2D, Dense, Flatten, Concatenate, Dropout, BatchNormalization, Add, GlobalAveragePooling2D
-from keras.models import Model
-from keras.activations import relu, softmax
-from keras.regularizers import l2
-import os
+from tensorflow.keras.layers import Input, Activation, Conv2D, GlobalAveragePooling2D, MaxPooling2D, Dense, Dropout, Flatten, Concatenate, BatchNormalization
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
 
 class convolutional_neural_net():
 
@@ -163,41 +161,41 @@ class convolutional_neural_net():
         matrix_shape = Input(shape=shapes_tuple[0])
         metadata_shape = Input(shape=shapes_tuple[1])
 
-        # Convolutional layers with different kernel sizes
-        conv_layer = Conv2D(256, kernel_size=(8,8), padding='same', activation='relu')(matrix_shape)
+        # Convolutional layers with adjusted kernel sizes
+        conv_layer = Conv2D(256, kernel_size=(3,3), padding='same')(matrix_shape)
+        conv_layer = BatchNormalization()(conv_layer)
+        conv_layer = Activation('relu')(conv_layer)
 
         global_pool = GlobalAveragePooling2D()(conv_layer)
 
-
-        mp_layer = MaxPooling2D(pool_size=(2, 2),strides=(1,1),padding='valid')(conv_layer)
-        conv_mp_layer = Conv2D(64, kernel_size=(2,2), padding='same', activation='relu')(mp_layer)
-
-        
-        conv_layer = BatchNormalization()(conv_layer)
+        mp_layer = MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='valid')(conv_layer)
+        conv_mp_layer = Conv2D(64, kernel_size=(2,2), padding='same')(mp_layer)
         conv_mp_layer = BatchNormalization()(conv_mp_layer)
+        conv_mp_layer = Activation('relu')(conv_mp_layer)
 
+        knight_layer = Conv2D(256, kernel_size=(2,2), padding='same')(matrix_shape)
+        knight_layer = BatchNormalization()(knight_layer)
+        knight_layer = Activation('relu')(knight_layer)
 
-        knight_layer = Conv2D(256, kernel_size=(3,3), padding='same', activation='relu')(matrix_shape)
-        knight_layer = BatchNormalization()(conv_layer)
+        pawn_layer = Conv2D(64, kernel_size=(2,2), padding='same')(matrix_shape)
+        pawn_layer = BatchNormalization()(pawn_layer)
+        pawn_layer = Activation('relu')(pawn_layer)
 
-
-        pawn_layer = Conv2D(64, kernel_size=(2,2), padding='same', activation='relu')(matrix_shape)
-        pawn_layer = BatchNormalization()(conv_layer)
-
-
-        fc_metadata = Dense(64, activation='relu')(metadata_shape)
+        # Dense layers for metadata with dropout and L2 regularization
+        fc_metadata = Dense(64, activation='relu', kernel_regularizer=l2(0.01))(metadata_shape)
         fc_metadata = Dropout(0.5)(fc_metadata)
 
+        # Flattening layers
         conv_layer_flat = Flatten()(conv_layer)
         conv_mp_layer_flat = Flatten()(conv_mp_layer)
         knight_layer_flat = Flatten()(knight_layer)
         pawn_layer_flat = Flatten()(pawn_layer)
-        global_pool_flat = Flatten()(global_pool) 
+
         # Concatenation with metadata
-        combined = Concatenate()([conv_layer_flat,conv_mp_layer_flat,knight_layer_flat,pawn_layer_flat,global_pool_flat,fc_metadata])
+        combined = Concatenate()([conv_layer_flat, conv_mp_layer_flat, knight_layer_flat, pawn_layer_flat, global_pool, fc_metadata])
 
         # Further dense layers
-        flc = Dense(256, activation='relu')(combined)
+        flc = Dense(256, activation='relu', kernel_regularizer=l2(0.01))(combined)
         flc = Dropout(0.5)(flc)
 
         # Output layer
@@ -216,21 +214,9 @@ class convolutional_neural_net():
         validation_steps = math.ceil(validation_samples/validation_batch)
         return steps_per_epoch, validation_steps,batch_size
 
-    def delete_files_in_directory(self,directory):
-        for filename in os.listdir(directory):
-            file_path = os.path.join(directory, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    # Uncomment the following line if you also want to remove subdirectories
-                    # shutil.rmtree(file_path)
-                    pass
-            except Exception as e:
-                print(f'Failed to delete {file_path}. Reason: {e}')
+
 
     def create_and_evaluate_model(self):
-        self.delete_files_in_directory(directory=self.log_dir)
         tensorboard_callback =  tf.keras.callbacks.TensorBoard(log_dir=self.log_dir, 
                                                                histogram_freq=1,
                                                                 write_graph=True,
