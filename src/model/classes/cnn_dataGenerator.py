@@ -10,7 +10,7 @@ from joblib import dump, load
 import shutil
 import csv
 import math
-
+import re
 
 
 class data_generator():
@@ -184,7 +184,6 @@ class data_generator():
     
     def create_scaler(self):
         scaler = StandardScaler()
-        #matrixScaler = StandardScaler()
         
         limit = self.get_row_count(self.train_file)
         adjusted_limit = math.ceil(limit/self.scalarBatchSize)
@@ -194,18 +193,11 @@ class data_generator():
             if batch_amt > (limit-1):
                 break
             else:
-                #if end up needing matrix scaling, this line should be replaced with splitting matrix into n col name and value for 64 new columns per 8x8
-                    # t = []
-                    # for value in batch[0].values:
-                    #     tmp = []
-                    #     for mat in value:
-                    #         tmp+=mat
-                    #     t.append(tmp)
-                #matrixScaler.partial_fit(batch[0].values)
+
                 scaler.partial_fit(batch[1])
                 batch_amt += self.scalarBatchSize
         self.init_scaler(scaler=scaler)
-        #self.init_scaler(scaler=matrixScaler,scalarFile=self.matrixScalerFile)
+
         return scaler
     
     def data_generator(self, batch_size,filename):
@@ -224,25 +216,25 @@ class data_generator():
             for chunk in data:
                 X, Y, matrix_data = self.clean_data(chunk)
                 Y = np.array(Y)
-                #output = np.reshape(Y,(-1,1))
+
                 output = Y
                 yield (matrix_data, X, output )
 
     def scaled_data_generator(self, batch_size,filename):
         scaler = self.load_scaler()
-        #matrixScaler = self.load_scaler(scalarFile=self.matrixScalerFile)
-        while True:  # Loop indefinitely
+
+        while True:
             data = pd.read_csv(filename, chunksize=batch_size)
             for chunk in data:
                     X, Y, matrixData = self.clean_data(chunk)
                     X_scaled = scaler.transform(X)
+                    #print(matrixData.columns)
                     matrixData_scaled = matrixData.stack().map(reshape_to_matrix).unstack()
 
                     output_matrices = np.stack(matrixData_scaled.apply(lambda row: np.stack(row, axis=-1), axis=1).to_numpy())
 
-                    #matrixData_scaled = matrixScaler.transform(matrixData)
                     Y = np.array(Y)
-                    #output = np.reshape(Y,(-1,1))
+
                     output = Y
                     yield ((output_matrices,X_scaled), output)
 
@@ -270,8 +262,10 @@ class data_generator():
         meta_shape = shapes[1]
         dataset = tf.data.Dataset.from_generator(
             lambda: self.scaled_data_generator(filename=filename, batch_size=batch_size),
-            output_types=((tf.float16, tf.float16),tf.float16),  # Update these types based on your data
-            output_shapes=(([None, matrix_shape[0], matrix_shape[1], matrix_shape[2]], [None, meta_shape[0]]), [None, 3])  # Update shapes based on your data
+            output_types=((tf.int8, tf.float16),tf.float16),  
+            output_shapes=(([self.gen_batch_size, matrix_shape[0], matrix_shape[1], matrix_shape[2]], 
+                            [self.gen_batch_size, meta_shape[0]]), 
+                            [self.gen_batch_size, 3]) 
         )
         return dataset
                     
@@ -281,12 +275,14 @@ def string_to_array(s):
 
 def flat_string_to_array(s):
     
-    cleaned_string = s.strip('[]\'').replace('\n', '')
+    cleaned_string = re.findall(r'\d+', s)
     if s is None:
         print('s was none')
         return None
-    integer_array = [np.float16(num) for num in cleaned_string.split()]
-
+    try:
+        integer_array = np.array(cleaned_string, dtype=np.int8)
+    except Exception as e:
+        raise Exception(e)
     return integer_array
 
 def reshape_to_matrix(cell):

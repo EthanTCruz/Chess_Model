@@ -220,27 +220,42 @@ class boardCnnEval:
         dict_results["black king defended positions"] = black_results[4].flatten()
         dict_results["black pawn defended positions"] = black_results[5].flatten()
         
+        white_pieces = white_results[0]
+        for i in range(1,len(white_results)):
+            white_pieces += white_results[i]
 
+        black_pieces = black_results[0]
+        for i in range(1,len(black_results)):
+            black_pieces += black_results[i]
+
+        total_pieces = black_pieces + white_pieces
+
+        dict_results["all defended positions"] = total_pieces
 
         return dict_results
 
-    def defended_pieces_to_matrices(self,pieces,piece_map,white:bool,board: chess.Board):
+    def defended_pieces_to_matrices(self, pieces, piece_map, white: bool, board: chess.Board):
         zeros = self.zeros_matrix.copy()
         results = []
         for _ in range(6):
             results.append(np.copy(zeros))
 
-        for position,piece in piece_map.items():
-
+        for position, piece in piece_map.items():
             if piece in pieces:
                 result = pieces.index(piece)
 
-                if board.is_attacked_by(white,position):
-                    row,col = divmod(position,8)
-                    results[result][row,col] = 1
-                        
+                # Get the number of attackers on this square
+                attackers = board.attackers(not white, position) # Using `not white` to get attackers of the opposite color
+                defenders = board.attackers(white, position)
+                defended = len(defenders) - len(attackers)
+                
+                if defended > 0:
+                    row, col = divmod(position, 8)
+                    results[result][row, col] = 1
 
         return results
+
+
 
     def attacks_to_matrix(self,pieces, moves,piece_map):
         zeros = self.zeros_matrix.copy()
@@ -298,11 +313,20 @@ class boardCnnEval:
         for i in range(1,len(black_results)):
             black_pieces += black_results[i]
 
-        total_pieces = white_pieces - black_pieces
-        
-        dict_results["white attack positions"] = white_pieces.flatten()
-        dict_results["black attack positions"] = black_pieces.flatten()
-        dict_results["white black attack positions"] = total_pieces.flatten()
+
+        white_minus_black = white_pieces - black_pieces
+
+        black_pieces_attacks = np.where(black_pieces > 0, 1, 0)
+        white_pieces_attacks = np.where(white_pieces > 0, 1, 0)
+
+        dict_results["white attack positions"] = white_pieces_attacks.flatten()
+        dict_results["black attack positions"] = black_pieces_attacks.flatten()
+
+        white_advantage = np.where(white_minus_black > 0, 1, 0)
+        black_advantage = np.where(white_minus_black < 0, 1, 0)
+
+        dict_results["white advantage attack positions"] = white_advantage.flatten()
+        dict_results["black advantage attack positions"] = black_advantage.flatten()
 
         return dict_results
 
@@ -343,8 +367,11 @@ class boardCnnEval:
         for i in range(1,len(black_results)):
             black_pieces += black_results[i]
 
-        total_pieces = white_pieces - black_pieces
-        
+        total_pieces = white_pieces + black_pieces
+
+        black_pieces = np.where(black_pieces > 0, 1, 0)
+        white_pieces = np.where(white_pieces > 0, 1, 0)
+
         dict_results["white positions"] = white_pieces.flatten()
         dict_results["black positions"] = black_pieces.flatten()
         dict_results["white black positions"] = total_pieces.flatten()

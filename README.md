@@ -100,23 +100,33 @@ Detects if the given square is pinned to the king of the given color.
 
 tensorboard --logdir='C:\Users\ethan\git\Full_Chess_App\Chess_Model\logs'
 
-/s]
-Traceback (most recent call last):
-  File "C:\Users\ethan\git\Full_Chess_App\Chess_Model\src\model\main.py", line 220, in <module>
-    main()
-  File "C:\Users\ethan\git\Full_Chess_App\Chess_Model\src\model\main.py", line 68, in main
-    tune_parameters()
-  File "C:\Users\ethan\git\Full_Chess_App\Chess_Model\src\model\main.py", line 198, in tune_parameters
-    loss,accuracy = nn.create_and_evaluate_model()
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\ethan\git\Full_Chess_App\.\Chess_Model\src\model\classes\cnn_model.py", line 250, in create_and_evaluate_model
-    model = self.create_model(shapes_tuple=shape)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\ethan\git\Full_Chess_App\.\Chess_Model\src\model\classes\cnn_model.py", line 182, in create_model
-    conv_layer = Multiply()([conv_layer, attention_layer,global_pool])
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\ethan\git\Full_Chess_App\chess-model-env\Lib\site-packages\keras\src\utils\traceback_utils.py", line 70, in error_handler
-    raise e.with_traceback(filtered_tb) from None
-  File "C:\Users\ethan\git\Full_Chess_App\chess-model-env\Lib\site-packages\keras\src\layers\merging\base_merge.py", line 74, in _compute_elemwise_op_output_shape
-    raise ValueError(
-ValueError: Inputs have incompatible shapes. Received shapes (8, 8, 128) and (64,)
+ /                                                 \
+| Converting pgn file to db: ./Chess_Model/src/mode |
+| l/data/games.csv                                  |
+ \                                                 /
+  =================================================
+                                                 \
+                                                  \
+                                                    ^__^
+                                                    (oo)\_______
+                                                    (__)\       )\/\
+                                                        ||----w |
+                                                        ||     ||
+Processing Adams.pgn Games to DB: 100%|██████████████████████████████████████████████████████████████████████████| 3436/3436 [01:38<00:00, 34.79it/s]
+Processing goonter.pgn Games to DB: 100%|████████████████████████████████████████████████████████████████████████████| 50/50 [00:00<00:00, 63.02it/s]
+Processing lichess_GoonterYM_2024-02-24.pgn Games to DB: 100%|█████████████████████████████████████████████████████| 591/591 [00:09<00:00, 63.16it/s]
+  _________________________________________________
+ /                                                 \
+| Generating feature data from pgn boards in csv: . |
+| /Chess_Model/src/model/data/data.csv              |
+ \                                                 /
+  =================================================
+                                                 \
+                                                  \
+                                                    ^__^
+                                                    (oo)\_______
+                                                    (__)\       )\/\
+                                                        ||----w |
+                                                        ||     ||
+Processing Feature Data: 100%|██████████████████████████████████████████████████████████████████████████████| 267474/267474 [40:33<00:00, 109.91it/s]
+Creating Scalar:  71%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏   
