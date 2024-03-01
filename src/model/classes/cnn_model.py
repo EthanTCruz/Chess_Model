@@ -11,9 +11,9 @@ from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_b
 import math
 from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator
 from datetime import datetime
-from tensorflow.keras.layers import Input, Activation, Conv2D, GlobalAveragePooling2D, MaxPooling2D, Dense, Dropout, Flatten, Concatenate, BatchNormalization
+from tensorflow.keras.layers import Input, Multiply,Add, Conv2D, GlobalAveragePooling2D, MaxPooling2D, Dense, Dropout, Flatten, Concatenate, BatchNormalization
 from tensorflow.keras.models import Model
-from tensorflow.keras.regularizers import l2
+from tensorflow.keras.activations import relu, softmax
 
 class convolutional_neural_net():
 
@@ -161,45 +161,22 @@ class convolutional_neural_net():
         matrix_shape = Input(shape=shapes_tuple[0])
         metadata_shape = Input(shape=shapes_tuple[1])
 
-        # Convolutional layers with adjusted kernel sizes
-        conv_layer = Conv2D(256, kernel_size=(3,3), padding='same')(matrix_shape)
-        conv_layer = BatchNormalization()(conv_layer)
-        conv_layer = Activation('relu')(conv_layer)
+        # Process bitboards
+        x = Flatten()(matrix_shape)
+        x = Dense(512, activation='relu')(x)
 
-        global_pool = GlobalAveragePooling2D()(conv_layer)
+        # Process metadata
+        y = Dense(32, activation='relu')(metadata_shape)
 
-        mp_layer = MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='valid')(conv_layer)
-        conv_mp_layer = Conv2D(64, kernel_size=(2,2), padding='same')(mp_layer)
-        conv_mp_layer = BatchNormalization()(conv_mp_layer)
-        conv_mp_layer = Activation('relu')(conv_mp_layer)
+        # Combine bitboard and metadata features
+        combined = Concatenate()([x, y])
 
-        knight_layer = Conv2D(256, kernel_size=(2,2), padding='same')(matrix_shape)
-        knight_layer = BatchNormalization()(knight_layer)
-        knight_layer = Activation('relu')(knight_layer)
-
-        pawn_layer = Conv2D(64, kernel_size=(2,2), padding='same')(matrix_shape)
-        pawn_layer = BatchNormalization()(pawn_layer)
-        pawn_layer = Activation('relu')(pawn_layer)
-
-        # Dense layers for metadata with dropout and L2 regularization
-        fc_metadata = Dense(64, activation='relu', kernel_regularizer=l2(0.01))(metadata_shape)
-        fc_metadata = Dropout(0.5)(fc_metadata)
-
-        # Flattening layers
-        conv_layer_flat = Flatten()(conv_layer)
-        conv_mp_layer_flat = Flatten()(conv_mp_layer)
-        knight_layer_flat = Flatten()(knight_layer)
-        pawn_layer_flat = Flatten()(pawn_layer)
-
-        # Concatenation with metadata
-        combined = Concatenate()([conv_layer_flat, conv_mp_layer_flat, knight_layer_flat, pawn_layer_flat, global_pool, fc_metadata])
-
-        # Further dense layers
-        flc = Dense(256, activation='relu', kernel_regularizer=l2(0.01))(combined)
-        flc = Dropout(0.5)(flc)
+        # Hidden layers
+        z = Dense(256, activation='relu')(combined)
+        z = Dense(128, activation='relu')(z)
 
         # Output layer
-        output = Dense(3, activation='softmax')(flc)
+        output = Dense(3, activation='softmax')(z)
 
         model = Model(inputs=[matrix_shape, metadata_shape], outputs=output)
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
@@ -224,7 +201,7 @@ class convolutional_neural_net():
         cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=self.checkpoints,
                                                  save_weights_only=True,
                                                  verbose=1)
-        #tensorboard --logdir='C:\Users\ethan\git\Full_Chess_App\Chess_Model\logs'
+        #tensorboard --logdir='/home/user/Chess_Model/logs/train'
         gpus = tf.config.list_physical_devices('GPU')
         if len(gpus) > 0:
             for gpu in gpus:
@@ -233,42 +210,45 @@ class convolutional_neural_net():
         steps_per_epoch,validation_steps,batch_size = self.calc_step_sizes()
         shape = self.dataGenerator.get_shape()
 
-        
-        model = self.create_model(shapes_tuple=shape)
+        strategy = tf.distribute.MirroredStrategy()
+        print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
-        train_dataset = self.dataGenerator.dataset_from_generator(
-                filename=self.train_file)
-        validation_dataset = self.dataGenerator.dataset_from_generator(
-                filename=self.validation_file)
+        with strategy.scope():
+            model = self.create_model(shapes_tuple=shape)
+
+            train_dataset = self.dataGenerator.dataset_from_generator(
+                    filename=self.train_file)
+            validation_dataset = self.dataGenerator.dataset_from_generator(
+                    filename=self.validation_file)
 
 
-        
-        # Train the model
-        history = model.fit(self.dataGenerator.train_data,
-                  steps_per_epoch=steps_per_epoch,
-                  epochs=self.epochs, 
-                  validation_data=self.dataGenerator.validation_data,
-                  validation_steps=validation_steps,
-                  callbacks=[tensorboard_callback,cp_callback])
-        # Evaluate the model on the test set
-
-        test_dataset = self.dataGenerator.dataset_from_generator(
-                filename=self.test_file)
-        
-        test_size = self.dataGenerator.test_dataset_size(filename=self.test_file)
-        steps = math.ceil((test_size - 1) / batch_size)
-        loss, accuracy = model.evaluate(self.dataGenerator.test_data,steps=steps)
-
-        model.save(filepath=self.ModelFile)
-        
-        print("Test loss:", loss)
-        print("Test accuracy:", accuracy)
-
-        if self.saveToBucket:
-            self.save_model_to_bucket()
             
-        self.reload_model()
-        return loss,accuracy
+            # Train the model
+            history = model.fit(self.dataGenerator.train_data,
+                    steps_per_epoch=steps_per_epoch,
+                    epochs=self.epochs, 
+                    validation_data=self.dataGenerator.validation_data,
+                    validation_steps=validation_steps,
+                    callbacks=[tensorboard_callback,cp_callback])
+            # Evaluate the model on the test set
+
+            test_dataset = self.dataGenerator.dataset_from_generator(
+                    filename=self.test_file)
+            
+            test_size = self.dataGenerator.test_dataset_size(filename=self.test_file)
+            steps = math.ceil((test_size - 1) / batch_size)
+            loss, accuracy = model.evaluate(self.dataGenerator.test_data,steps=steps)
+
+            model.save(filepath=self.ModelFile)
+            
+            print("Test loss:", loss)
+            print("Test accuracy:", accuracy)
+
+            if self.saveToBucket:
+                self.save_model_to_bucket()
+                
+            self.reload_model()
+            return loss,accuracy
     
         #return model
 

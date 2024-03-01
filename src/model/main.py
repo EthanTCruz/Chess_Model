@@ -166,7 +166,8 @@ def test_self_train():
 def test_process_fen():
     board = get_sample_board()
     gam_an_obj = cnn_game_analyzer(scores_file=scores_file)
-    gam_an_obj.process_single_board(board=board)
+    info =  gam_an_obj.process_single_board(board=board)
+    return info
 
 
 
