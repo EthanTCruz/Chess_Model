@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     minimumEndgamePieces: int = 5
     trainModel: bool = False
     selfTrain: bool = False
-    trainDataExists: bool = True
+    trainDataExists: bool = False
     useSamplePgn: bool = False
     saveToBucket: bool = False
 

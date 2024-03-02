@@ -1,5 +1,5 @@
 import chess
-
+from multiprocessing import Pool
 import csv
 import os
 import pandas as pd
@@ -56,7 +56,15 @@ class game_analyzer:
         
         return data
 
-
+    @staticmethod
+    def worker(game):
+        if game is None: 
+            return 1
+        # This static method will be the worker function
+        # Instantiate game_analyzer and evaluate_board here, since each process will have its own instance
+        analyzer = game_analyzer()
+        analyzer.refresh_evaluator(game=game)  # Ensure the evaluator is refreshed for the game
+        return analyzer.evaluate_board(game=game)
 
 
 
@@ -92,7 +100,26 @@ class game_analyzer:
         return df
 
 
+    def process_sqlite_boards_pooling(self,db: Session = SessionLocal()):
+        self.create_csv()
 
+        row_count = get_rollup_row_count(db=db)
+        games = fetch_all_game_positions_rollup(yield_size=500, db=db)
+
+        # Initialize a process Pool
+        with Pool(os.cpu_count()) as pool:
+            # Map the worker function across the games, using tqdm for progress tracking
+            results = list(tqdm(pool.imap_unordered(self.worker, games), total=row_count, desc="Processing Feature Data"))
+
+        # Write the results to CSV
+        with open(self.output_file, 'a', newline='') as gameEvalfile:
+            writer = csv.writer(gameEvalfile)
+            for scores in results:
+                if scores:
+                    if scores is None or scores == 1:
+                        return 1
+                    row = list(scores.values())
+                    writer.writerow(row)
 
     def process_sqlite_boards(self,db: Session = SessionLocal()):
         self.create_csv()

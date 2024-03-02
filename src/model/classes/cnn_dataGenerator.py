@@ -6,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 from Chess_Model.src.model.config.config import Settings
 import random
-from joblib import dump, load
+from joblib import dump, load, Parallel, delayed
 import shutil
 import csv
 import math
@@ -118,7 +118,30 @@ class data_generator():
     def copy_csv(self,source_file, destination_file):
         shutil.copy(source_file, destination_file)
 
+    def preprocess_and_scale_chunk(self, chunk):
+        # Preprocess the chunk. Adjust this to your actual preprocessing needs
+        X, _, _ = self.clean_data(chunk)
+        # Assuming X is now a clean, preprocessed DataFrame
+        return X
 
+    def create_scaler_cpu(self):
+
+        
+        scaler = StandardScaler()
+        chunks = pd.read_csv(self.train_file, chunksize=100)
+        
+        # Preprocess chunks in parallel
+        preprocessed_chunks = Parallel(n_jobs=-1)(
+            delayed(self.preprocess_and_scale_chunk)(chunk) for chunk in chunks
+        )
+        
+        # Combine all preprocessed chunks into one DataFrame if possible or fit scaler incrementally
+        for preprocessed_chunk in preprocessed_chunks:
+            scaler.partial_fit(preprocessed_chunk)
+        
+        self.init_scaler(scaler)
+
+        return scaler
 
 
     def initialize_datasets(self):
@@ -127,6 +150,7 @@ class data_generator():
         self.headers = pd.read_csv(self.train_file,nrows=0)
         self.non_matrix_headers = [col for col in self.headers.columns if not col.endswith('positions')]
         self.create_scaler()
+        #self.create_scaler_cpu()
         self.shape = self.get_shape()
 
     def split_csv(self, chunksize=10000):
