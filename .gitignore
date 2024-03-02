@@ -23,7 +23,7 @@ src/model/data/validation.csv
 src/model/data/training.csv
 src/model/data/testing.csv
 **secret.json**
-src/model/data/*
+src/model/data/**
 src/model/data/EndgameTbl/*
 !src/model/data/EndgameTbl/
 terraform/single_vm/*
