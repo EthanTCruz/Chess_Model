@@ -95,17 +95,17 @@ def delete_files_in_directory(directory):
 
 def pgn_to_db(db: Session = SessionLocal()):
 
-    delete_all_game_positions(db = db)
-    if os.path.exists(scores_file):
-        os.remove(scores_file)
-    if os.path.exists(games_csv_file):
-        os.remove(games_csv_file)
+    # delete_all_game_positions(db = db)
+    # if os.path.exists(scores_file):
+    #     os.remove(scores_file)
+    # if os.path.exists(games_csv_file):
+    #     os.remove(games_csv_file)
 
 
-    pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
-    cowsay.cow(f"Converting pgn file to db: {games_csv_file}")    
-    pgn_obj.pgn_fen_to_sqlite(db = db)
-    del pgn_obj
+    # pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
+    # cowsay.cow(f"Converting pgn file to db: {games_csv_file}")    
+    # pgn_obj.pgn_fen_to_sqlite(db = db)
+    # del pgn_obj
     cowsay.cow(f"Generating feature data from pgn boards in csv: {scores_file}")
     gam_an_obj = cnn_game_analyzer(scores_file=scores_file)
     gam_an_obj.open_endgame_tables()
@@ -194,7 +194,8 @@ def tune_parameters():
                     ModelFilePath=ModelFilePath,player='w',
                     predictions_board=predictions_board,
                     trainModel=s.trainModel)
-        dg.initialize_datasets()
+        #dg.initialize_datasets()
+        dg.create_scaler_cpu()
         del dg
 
     epoch_sizes = [16,32,64,128]
