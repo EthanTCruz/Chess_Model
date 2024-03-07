@@ -199,22 +199,21 @@ def tune_parameters():
         del dg
 
     epoch_sizes = [16,32,64,128]
-    batch_sizes = [128,512,1024,2048,5012]
-    for b in batch_sizes:
-        for e in epoch_sizes:
 
-            nn = cnn_model(filename=scores_file,target_feature=target_features,
-                test_size=test_size,ModelFilename = ModelFilename,
-                ModelFilePath=ModelFilePath,player='w',
-                predictions_board=predictions_board,epochs=e,
-                trainModel=s.trainModel,batch_size=b)
-            
-            loss,accuracy = nn.create_and_evaluate_model()
+    for e in epoch_sizes:
 
-            with open(eval_file, 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                row = [e,b,loss,accuracy]
-                writer.writerow(row)
+        nn = cnn_model(filename=scores_file,target_feature=target_features,
+            test_size=test_size,ModelFilename = ModelFilename,
+            ModelFilePath=ModelFilePath,player='w',
+            predictions_board=predictions_board,epochs=e,
+            trainModel=s.trainModel)
+        
+        loss,accuracy = nn.create_and_evaluate_model()
+
+        with open(eval_file, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            row = [e,loss,accuracy]
+            writer.writerow(row)
     return 0
 
 def create_csv():
@@ -226,7 +225,7 @@ def create_csv():
     with open(eval_file, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
 
-        columns = ["epochs","batch_size","loss","accuracy"]
+        columns = ["epochs","loss","accuracy"]
         writer.writerow(columns)
 
 
