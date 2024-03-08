@@ -11,6 +11,7 @@ import shutil
 import csv
 import math
 import re
+import os
 
 
 class data_generator():
@@ -145,7 +146,6 @@ class data_generator():
 
 
     def initialize_datasets(self):
-        self.copy_csv(source_file=self.filename, destination_file=self.copy_data)
         self.split_csv()
         self.headers = pd.read_csv(self.train_file,nrows=0)
         self.non_matrix_headers = [col for col in self.headers.columns if not col.endswith('positions')]
@@ -154,7 +154,16 @@ class data_generator():
         self.shape = self.get_shape()
 
     def split_csv(self, chunksize=10000):
+        if os.path.exists(self.train_file):
+            os.remove(self.train_file)
+        if os.path.exists(self.test_file):
+            os.remove(self.test_file)
+        if os.path.exists(self.validation_file):
+            os.remove(self.validation_file)
+        if os.path.exists(self.copy_data):
+            os.remove(self.copy_data)
         self.copy_csv(source_file=self.filename, destination_file=self.copy_data)
+        
         self.filename = self.copy_data
         total_rows = self.get_row_count(filename=self.filename)
 
