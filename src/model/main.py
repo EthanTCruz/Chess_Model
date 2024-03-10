@@ -65,7 +65,8 @@ mp = cnn_move_picker(neuralNet=nn)
 def main():
     #test()
     #test_process_fen()
-    tune_parameters()
+    highest_scoring_move()
+    # tune_parameters()
 
     # if s.trainModel:
     #     train_and_test_model()
@@ -131,18 +132,22 @@ def highest_scoring_move():
     #board.push_san("Qxf2")
 
     start_time = time.time()
-    move = mp.use_model(board=board)
-
+    # move = mp.use_model(board=board)
+    move = use_model_new(board=board)
     end_time = time.time()
     duration = end_time - start_time 
     print(f"Model took {duration} seconds to run., Move is: {move}, should be h4f2")
 
 
+def use_model_new(board: chess.Board = chess.Board()):
 
+    move = mp.use_model_timed(board=board,time_limit=20)
+
+    return move
 
 def use_model(board: chess.Board = chess.Board()):
 
-    move = mp.use_model(board=board)
+    move = mp.use_model_cnn(board=board)
 
     return move
 

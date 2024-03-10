@@ -4,7 +4,7 @@ import chess
 from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.MCTS import mcts
 from Chess_Model.src.model.classes.potential_board_populator import populator
-
+from Chess_Model.src.model.classes.cnn_MCTS import mcts as mcts2
 
 
 class move_picker():
@@ -23,6 +23,7 @@ class move_picker():
         else:
             self.nn = kwargs["neuralNet"]
         self.ms = mcts(neuralNet=self.nn)
+        self.ms2 = mcts2(neuralNet=self.nn)
         baseBoard = chess.Board()
         baseDepth = 1
         self.populator = populator(board=baseBoard,score_depth=baseDepth)
@@ -30,7 +31,12 @@ class move_picker():
 
 
 
+    def use_model_timed(self,board: chess.Board = chess.Board(),time_limit:float = 10):
 
+
+        move = self.ms2.mcst_timed(board=board,time_limit=time_limit)
+
+        return move
         
     
     def use_model(self,board: chess.Board = chess.Board(),score_depth: int = 1,percentile: float = 0.75):
