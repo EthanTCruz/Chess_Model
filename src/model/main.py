@@ -65,13 +65,13 @@ mp = cnn_move_picker(neuralNet=nn)
 def main():
     #test()
     #test_process_fen()
-    highest_scoring_move()
-    # tune_parameters()
+    #highest_scoring_move()
+    tune_parameters()
 
     # if s.trainModel:
     #     train_and_test_model()
-    # if s.selfTrain:
-    #     test_self_train()
+    if s.selfTrain:
+        test_self_train()
     #board = chess.Board(fen='8/8/6K1/8/2k5/2P2R2/1P6/8 w - - 0 44')
     #test_endgame(board=board)
     #train_and_test_model()
@@ -166,7 +166,7 @@ def test_self_train():
                 ModelFilePath=ModelFilePath,player='w',
                 predictions_board=predictions_board,epochs=100,
                 neuralNet = nn)
-    t.self_train(iterations=1,depth=2)
+    t.self_train(iterations=1,depth=1,trainModel=False)
 
 def test_process_fen():
     board = get_sample_board()
