@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     endgame_table: str = f"{srcModelDirectory}/data/EndgameTbl/"
     minimumEndgamePieces: int = 5
     trainModel: bool = False
-    selfTrain: bool = False
+    selfTrain: bool = True
     trainDataExists: bool = False
     useSamplePgn: bool = False
     saveToBucket: bool = False
