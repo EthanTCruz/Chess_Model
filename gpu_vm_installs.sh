@@ -1,6 +1,4 @@
-sudo apt install tmux neovim python3.11-venv git -y
-python3 -m venv ./env
-source ./env/bin/activate
+sudo apt install tmux neovim  git -y
 export trainDataExists=False
 export useSamplePgn=False
 export trainModel=True
