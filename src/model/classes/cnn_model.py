@@ -1,6 +1,17 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
+
+def configure_gpu_memory_growth():
+    gpus= tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+        except RuntimeError as e:
+            print(e)
+
+configure_gpu_memory_growth()
 from Chess_Model.src.model.classes.cnn_game_analyzer import game_analyzer
 import numpy as np
 import chess
@@ -201,6 +212,7 @@ class convolutional_neural_net():
         cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=self.checkpoints,
                                                  save_weights_only=True,
                                                  verbose=1)
+
         #tensorboard --logdir='/home/user/Chess_Model/logs/train'
         gpus = tf.config.list_physical_devices('GPU')
         if len(gpus) > 0:
@@ -216,10 +228,7 @@ class convolutional_neural_net():
         with strategy.scope():
             model = self.create_model(shapes_tuple=shape)
 
-            train_dataset = self.dataGenerator.dataset_from_generator(
-                    filename=self.train_file)
-            validation_dataset = self.dataGenerator.dataset_from_generator(
-                    filename=self.validation_file)
+
 
 
             
@@ -232,8 +241,6 @@ class convolutional_neural_net():
                     callbacks=[tensorboard_callback,cp_callback])
             # Evaluate the model on the test set
 
-            test_dataset = self.dataGenerator.dataset_from_generator(
-                    filename=self.test_file)
             
             test_size = self.dataGenerator.test_dataset_size(filename=self.test_file)
             steps = math.ceil((test_size - 1) / batch_size)

@@ -12,7 +12,7 @@ import csv
 import math
 import re
 import os
-
+import time
 
 class data_generator():
 
@@ -95,14 +95,15 @@ class data_generator():
         if scalarFile is None:
             scalarFile = self.scalerFile
         dump(scaler, scalarFile)
+        self.scalar = scaler
         return 0
     
 
     def load_scaler(self,scalarFile: str = None):
         if scalarFile is None:
             scalarFile = self.scalerFile
-        scaler = load(scalarFile)
-        return scaler
+        self.scaler = load(scalarFile)
+        return self.scaler
  
     
 
@@ -202,16 +203,16 @@ class data_generator():
         if data is None:
             return None,None,None
         matrix_data = pd.DataFrame()
-        for col in data.columns:
-            if col.endswith('positions'):
-                matrix_data[col] = data[col].apply(lambda x: flat_string_to_array(x))
+        for col in self.matrix_headers:
+            matrix_data[col] = data[col].apply(lambda x: flat_string_to_array(x))
 
         # DataFrame without 'positions' columns
-        non_positions_data = data.drop(columns=matrix_data.columns)
+
 
         # Split the non-positions data into features and target
-        X = non_positions_data.drop(columns=self.target_feature)
-        Y = non_positions_data[self.target_feature]
+        X = data[self.non_matrix_headers]
+        X = X.drop(columns=self.target_feature)
+        Y = data[self.target_feature]
 
         return X, Y, matrix_data
     
@@ -252,15 +253,15 @@ class data_generator():
 
                 output = Y
                 yield (matrix_data, X, output )
-
+                
     def scaled_data_generator(self, batch_size,filename):
-        scaler = self.load_scaler()
+
 
         while True:
             data = pd.read_csv(filename, chunksize=batch_size)
             for chunk in data:
                     X, Y, matrixData = self.clean_data(chunk)
-                    X_scaled = scaler.transform(X)
+                    X_scaled = self.scaler.transform(X)
                     #print(matrixData.columns)
                     matrixData_scaled = matrixData.stack().map(reshape_to_matrix).unstack()
 
@@ -271,7 +272,11 @@ class data_generator():
                     output = Y
                     yield ((output_matrices,X_scaled), output)
 
+
     def get_shape(self):
+        self.headers = pd.read_csv(self.train_file,nrows=0)
+        self.non_matrix_headers = [col for col in self.headers.columns if not col.endswith('positions')]
+        self.matrix_headers = [col for col in self.headers.columns if col.endswith('positions')]
         matrix_channels = 0
         metadata_columns = 0
         batch = next(self.data_generator(batch_size=self.gen_batch_size,filename=self.train_file))
@@ -284,6 +289,8 @@ class data_generator():
         self.train_data = self.dataset_from_generator(filename=self.train_file)
         self.test_data = self.dataset_from_generator(filename=self.test_file)
         self.validation_data = self.dataset_from_generator(filename=self.validation_file)
+        self.load_scaler()
+
 
         return self.shape
     
@@ -306,17 +313,29 @@ def string_to_array(s):
     # Safely evaluate the string as a Python literal (list of lists in this case)
     return np.array(ast.literal_eval(s))
 
+
+
 def flat_string_to_array(s):
-    
-    cleaned_string = re.findall(r'\d+', s)
-    if s is None:
-        print('s was none')
+    if not s:
         return None
+
+    # Remove all square brackets and replace newline characters with spaces
+    clean_string = s.replace('[', '').replace(']', '').replace('\n', ' ')
+
+    # Split the cleaned string on spaces to isolate the numbers as strings
+    numbers_str = clean_string.split()
+
+    # Convert list of number strings to a NumPy array of type int8
     try:
-        integer_array = np.array(cleaned_string, dtype=np.int8)
-    except Exception as e:
-        raise Exception(e)
+        integer_array = np.array(numbers_str, dtype=np.int8)
+    except ValueError as e:
+        # Handle cases where conversion fails due to invalid numeric strings
+        print(f"Error converting string to array: {e}")
+        return None
+
     return integer_array
+
+
 
 def reshape_to_matrix(cell):
     return np.array(cell).reshape(8, 8)

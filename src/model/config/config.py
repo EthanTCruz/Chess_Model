@@ -34,9 +34,10 @@ class Settings(BaseSettings):
     minimumEndgamePieces: int = 5
     trainModel: bool = False
     selfTrain: bool = True
-    trainDataExists: bool = False
+    trainDataExists: bool = True
     useSamplePgn: bool = False
     saveToBucket: bool = False
+    tuneParameters: bool = True
 
     #MCST parameters:
     UCB_Constant: float = 0.1
