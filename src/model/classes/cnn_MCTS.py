@@ -59,6 +59,46 @@ class mcts():
         node.children.add(child)
         return child
 
+    def simulation_sm_return(self,node: Node,white: bool,max_depth: int=100):
+            board = node.state.copy()
+            if board.result() == "1-0":
+                if white:
+                    return 1
+                else:
+                    return 0
+            elif board.result() == "0-1":
+                if white:
+                    return 0
+                else:
+                    return 1
+            elif board.result() == "1/2-1/2":
+                return 0.5
+            elif board.result() == '*':
+                score = self.nn.score_board(board)
+                white_score = float(score['white'])
+                black_score = float(score['black'])
+                stalemate_score = float(score['stalemate'])
+                    # Generate a random number between 0 and 1
+                rand_num = random.random()
+
+                # Determine which score range rand_num falls into
+                if rand_num <= white_score:
+                    if white:
+                        return 1
+                    else:
+                        return 0
+                elif rand_num <= white_score + black_score:
+                    if white:
+                        return 0
+                    else:
+                        return 1
+
+                else:
+                    return 0.5
+
+            else:
+                raise Exception("Escaped loop without winner",board.result())
+
     def simulation(self,node: Node,white: bool,max_depth: int=100):
         board = node.state.copy()
         i = 0
@@ -138,7 +178,8 @@ class mcts():
         while time.time() <= end_time:
             selected_node = self.selection(node=root)[0]
             expanded_node = self.expand(node=selected_node)
-            reward = self.simulation(node=expanded_node,white=white)
+            # reward = self.simulation(node=expanded_node,white=white)
+            reward = self.simulation_sm_return(node=expanded_node,white=white)
             self.backpropagate(node=expanded_node,reward=reward)
         move = self.shallow_find_best_move(node=root)
         return move

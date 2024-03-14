@@ -66,7 +66,8 @@ def main():
     #test()
     #test_process_fen()
     #highest_scoring_move()
-    tune_parameters()
+    if s.tuneParameters:
+        tune_parameters()
 
     # if s.trainModel:
     #     train_and_test_model()
