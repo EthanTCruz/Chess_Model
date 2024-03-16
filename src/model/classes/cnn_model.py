@@ -169,11 +169,11 @@ class convolutional_neural_net():
 
     def create_model(self,shapes_tuple):
         # Input layers
-        matrix_shape = Input(shape=shapes_tuple[0])
+        bitboard_shape = Input(shape=shapes_tuple[0])
         metadata_shape = Input(shape=shapes_tuple[1])
 
         # Process bitboards
-        x = Flatten()(matrix_shape)
+        x = Flatten()(bitboard_shape)
         x = Dense(512, activation='relu')(x)
 
         # Process metadata
@@ -189,7 +189,7 @@ class convolutional_neural_net():
         # Output layer
         output = Dense(3, activation='softmax')(z)
 
-        model = Model(inputs=[matrix_shape, metadata_shape], outputs=output)
+        model = Model(inputs=[bitboard_shape, metadata_shape], outputs=output)
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         return model
     

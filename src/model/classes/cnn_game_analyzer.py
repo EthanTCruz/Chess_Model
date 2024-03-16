@@ -4,8 +4,11 @@ import csv
 import os
 import pandas as pd
 from sqlalchemy.orm import  Session
-from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
 from tqdm import tqdm
+import tensorflow as tf
+import numpy as np
+
+from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
 from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.sqlite.dependencies import  fetch_all_game_positions_rollup,get_rollup_row_count,board_to_GamePostition
 from Chess_Model.src.model.classes.sqlite.models import GamePositions
@@ -32,6 +35,7 @@ class game_analyzer:
         self.evaluator = boardCnnEval()
 
         self.base_df = self.create_scores_df()
+        self.recordsDataFile = s.recordsData
         
     def open_endgame_tables(self):
         self.evaluator.open_tables()
@@ -154,3 +158,111 @@ class game_analyzer:
         
         return new_row
 
+    def create_records_csv(self):
+            # Check if the file exists and remove it
+        if os.path.exists(self.recordsDataFile):
+            os.remove(self.recordsDataFile)
+
+            # Create a new CSV file with the column headers
+        with open(self.recordsDataFile, 'w', newline='') as recordsFile:
+                pass
+        
+    def process_sqlite_boards_to_records(self, batch_size: int = 5):
+        with tf.io.TFRecordWriter(Settings().recordsData) as writer:
+            with SessionLocal() as db:
+                row_count = get_rollup_row_count(db=db)
+                batch = fetch_all_game_positions_rollup(yield_size=500, db=db)
+                serialized_examples = []  # List to accumulate serialized examples
+                for game in tqdm(batch, total=row_count, desc="Processing Feature Data"):
+                    try:
+                        if game:
+                            self.evaluator.setup_parameters_gamepositions(game=game)
+                            score = self.evaluator.get_board_scores()
+
+                            serialized_data = serialize_example(score)
+                            serialized_examples.append(serialized_data)
+
+                            # Check if we've accumulated enough examples to write a batch
+                            if len(serialized_examples) >= batch_size:
+                                for serialized_example in serialized_examples:
+                                    writer.write(serialized_example)
+                                serialized_examples = []  # Reset the list after writing
+                        else:
+                            return 1
+                    except Exception as e:
+                        raise Exception(e)
+                
+                # Write any remaining examples after looping through all games
+                for serialized_example in serialized_examples:
+                    writer.write(serialized_example)
+                    
+    def set_feature_description(self):
+        board = chess.Board()
+        game = board_to_GamePostition(board=board)
+        self.evaluator.setup_parameters_gamepositions(game=game)
+        scores = self.evaluator.get_board_scores()
+        self.feature_description = create_feature_description(data=scores)
+        return self.feature_description
+    
+    def get_feature_description(self):
+        return self.feature_description
+
+
+
+
+def create_feature_description(data):
+    feature_description = {}
+    for key, value in data.items():
+        if key in ['white mean', 'black mean', 'stalemate mean']:
+            feature_description[key] = tf.io.FixedLenFeature([], tf.float32)
+        elif isinstance(value, int):
+            feature_description[key] = tf.io.FixedLenFeature([], tf.float32)
+            # feature_description[key] = tf.io.FixedLenFeature([], tf.int64)
+        elif isinstance(value, float):
+            feature_description[key] = tf.io.FixedLenFeature([], tf.float32)
+        elif isinstance(value, np.ndarray):
+            # Arrays are serialized as strings, so we specify them as such
+            feature_description[key] = tf.io.FixedLenFeature([], tf.string)
+        else:
+            raise ValueError(f"Unsupported data type: {type(value)} for key: {key}")
+    return feature_description
+
+
+
+def _bytes_feature(value):
+    """Returns a bytes_list from a string / byte."""
+    if isinstance(value, type(tf.constant(0))):
+        value = value.numpy()  # BytesList won't unpack a string from an EagerTensor
+    return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+def _float_feature(value):
+    """Returns a float_list from a float / double."""
+    return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+
+def _int64_feature(value):
+    """Returns an int64_list from a bool / enum / int / uint."""
+    return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+def serialize_example(features):
+    """
+    Creates a tf.train.Example message ready to be written to a file.
+    """
+    # Create a dictionary mapping the feature name to the tf.train.Feature
+    feature = {}
+    for key, value in features.items():
+        if key in ['white mean', 'black mean', 'stalemate mean']:
+            feature[key] = _float_feature(value)
+        elif isinstance(value, int):
+            feature[key] = _float_feature(value)
+            # feature[key] = _int64_feature(value)
+        elif isinstance(value, float):
+            feature[key] = _float_feature(value)
+        elif isinstance(value, np.ndarray):
+            # Flatten the array and convert it to bytes
+            flat_array = value.tolist()
+            feature[key] = _bytes_feature(tf.io.serialize_tensor(flat_array))
+        else:
+            raise ValueError(f"Unsupported data type: {type(value)} for key: {key}")
+    
+    # Create a Features message using tf.train.Example
+    example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
+    return example_proto.SerializeToString()

@@ -5,6 +5,8 @@ import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
 from Chess_Model.src.model.config.config import Settings
+from Chess_Model.src.model.classes.cnn_game_analyzer import game_analyzer
+
 import random
 from joblib import dump, load, Parallel, delayed
 import shutil
@@ -81,6 +83,18 @@ class data_generator():
         self.validation_size = s.nnValidationSize
         self.scalarBatchSize = s.nnScalarBatchSize
 
+        self.recordsDataFile = s.recordsData
+
+        self.recordsDataFileCopy = s.recordsDataCopy
+        self.recordsDataFileTrain = s.recordsDataTrain
+        self.recordsDataFileTest = s.recordsDataTest
+        self.recordsDataFileValidation = s.recordsDataValidation
+
+        evaluator = game_analyzer(scores_file=s.scores_file)
+        evaluator.set_feature_description()
+        self.feature_description = evaluator.get_feature_description()
+
+        self.seed=3141
 
 
 
@@ -308,12 +322,163 @@ class data_generator():
                             [self.gen_batch_size, 3]) 
         )
         return dataset
-                    
+    
+    def _parse_function(self,example_proto):
+        # Parse the input tf.train.Example proto using the feature description dictionary
+        parsed_features = tf.io.parse_single_example(example_proto, self.feature_description)
+        
+        # Initialize dictionaries for the three categories
+        positions_data = {}
+        mean_data = {}
+        other_data = {}
+        
+        # Decode features based on type and categorize
+        for key, feature in self.feature_description.items():
+            if feature.dtype == tf.string and key.endswith('positions'):
+                # Parse, reshape to 8x8 for position/matrix data
+                parsed_array = tf.io.parse_tensor(parsed_features[key], out_type=tf.int32)
+                positions_data[key] = tf.reshape(parsed_array, [8, 8])
+            elif key in ['white mean', 'black mean', 'stalemate mean']:
+                # Directly assign mean data without need for decoding
+                mean_data[key] = parsed_features[key]
+            else:
+                # Handle other data types, decode if necessary
+                if feature.dtype == tf.string:
+                    parsed_array = tf.io.parse_tensor(parsed_features[key], out_type=tf.int32)
+                    other_data[key] = parsed_array
+                else:
+                    other_data[key] = parsed_features[key]
+        
+        return positions_data, other_data, mean_data
+    
+    def parser(self,recordsFile):
+        tfrecord_filenames = [recordsFile]
+        dataset = tf.data.TFRecordDataset(tfrecord_filenames)
+
+        # Map the parsing function over the dataset
+        parsed_dataset = dataset.map(self._parse_function)
+
+        # # Iterate over the parsed dataset and use the data
+        # for positions, others, means in parsed_dataset.take(5):
+        #     print("Positions Data:", positions)
+        #     print("Other Data:", others)
+        #     print("Means Data:", means)
+        #     print("\n---\n")
+        return parsed_dataset
+
+    def data_generator_no_matrices_records(self):
+        for positions, others, means in self.parsed_dataset:
+            yield others
+    
+    def get_row_count_records(self):
+        # Initialize a counter
+        count = 0
+
+        for _ in self.parsed_dataset:
+            count += 1
+        return count
+
+    def get_row_count_records_old(self):
+        # Assuming the dataset is batched
+        return sum(1 for _ in self.parsed_dataset.unbatch())
+
+    def create_scaler_records(self):
+        scaler = StandardScaler()
+        
+        # Adjusted for TensorFlow's dataset API
+        total_rows = count_dataset_elements(dataset=self.parsed_dataset)
+        adjusted_limit = math.ceil(total_rows / self.scalarBatchSize)
+        
+        # Convert dataset to generator for partial fitting
+        batches = self.data_generator_no_matrices_records()
+        
+        # Loop through the dataset and partial_fit the scaler
+        for _ in range(adjusted_limit):
+            try:
+                batch = next(batches)
+                batch_values = [value.numpy() for value in batch.values()]
+                batch_array = np.array(batch_values).reshape(1, -1) 
+                scaler.partial_fit(batch_array)
+            except StopIteration:
+                break  # When dataset ends
+
+        self.init_scaler(scaler=scaler)
+        return scaler
+
+    def initialize_datasets_records(self):
+        self._split_tfrecord()
+        self.parsed_dataset = self.parser(recordsFile=self.recordsDataFileTrain)
+        self.create_scaler_records()
+        # #self.create_scaler_cpu()
+        # self.shape = self.get_shape()
+
+    def _split_tfrecord(self):
+        # random.seed(3141)
+        # Load the dataset
+
+        if os.path.exists(self.recordsDataFileTrain):
+            os.remove(self.recordsDataFileTrain)
+        if os.path.exists(self.recordsDataFileTest):
+            os.remove(self.recordsDataFileTest)
+        if os.path.exists(self.recordsDataFileValidation):
+            os.remove(self.recordsDataFileValidation)
+        if os.path.exists(self.recordsDataFileCopy):
+            os.remove(self.recordsDataFileCopy)
+
+        self.copy_csv(self.recordsDataFile,self.recordsDataFileCopy)
+        self.recordsDataFile = self.recordsDataFileCopy
+
+        raw_dataset = tf.data.TFRecordDataset(self.recordsDataFile)
+
+        # Define split ratios
+        train_ratio = 1.0 - (self.test_size + self.validation_size)
+        
+        # Probabilistically filter the dataset into train, validation, and test sets
+        def is_train(x):
+            return tf.random.uniform([], seed=self.seed) < train_ratio
+
+        def is_val(x):
+            return tf.logical_and(tf.random.uniform([], seed=self.seed) >= train_ratio, 
+                                  tf.random.uniform([], seed=self.seed) < train_ratio + self.validation_size)
+
+        def is_test(x):
+            return tf.random.uniform([], seed=self.seed) >= (train_ratio + self.validation_size)
+
+        train_dataset = raw_dataset.filter(is_train)
+        val_dataset = raw_dataset.filter(is_val)
+        test_dataset = raw_dataset.filter(is_test)
+
+        # Function to write the split datasets to new TFRecord files
+        def write_tfrecord(dataset, filename):
+            tf.data.experimental.TFRecordWriter(filename).write(dataset)
+        
+        # Write the splits to new TFRecord files
+        write_tfrecord(train_dataset, self.recordsDataFileTrain)
+        write_tfrecord(val_dataset, self.recordsDataFileValidation)
+        write_tfrecord(test_dataset, self.recordsDataFileTest)
+        
+        # train_size = count_dataset_elements(train_dataset)
+        # val_size = count_dataset_elements(val_dataset)
+        # test_size = count_dataset_elements(test_dataset)
+        # total_size = train_size + test_size + val_size
+        # print(f"Training set size: {train_size}, ratio = {train_size/total_size}")
+        # print(f"Validation set size: {val_size}, ratio = {val_size/total_size}")
+        # print(f"Testing set size: {test_size}, ratio = {test_size/total_size}")
+
+
+                        
 def string_to_array(s):
     # Safely evaluate the string as a Python literal (list of lists in this case)
     return np.array(ast.literal_eval(s))
 
-
+def count_dataset_elements(dataset):
+    # Attempt to use the cardinality if available
+    cardinality = tf.data.experimental.cardinality(dataset).numpy()
+    if cardinality in [tf.data.experimental.INFINITE_CARDINALITY, tf.data.experimental.UNKNOWN_CARDINALITY]:
+        # Fallback: Iterate through the dataset and count elements
+        return sum(1 for _ in dataset)
+    else:
+        return cardinality
 
 def flat_string_to_array(s):
     if not s:

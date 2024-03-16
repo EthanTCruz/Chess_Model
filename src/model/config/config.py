@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     self_play: str = f"{srcModelDirectory}/data/self_play.pgn"
     persist_model: bool = True
     scaler_weights: str = f"{srcModelDirectory}/data/scaler.joblib"
+    recordsData: str = f"{srcModelDirectory}/data/feature_data.tfrecord"
+    recordsDataCopy: str = f"{srcModelDirectory}/data/feature_data_copy.tfrecord"
+    recordsDataTrain: str = f"{srcModelDirectory}/data/train_data.tfrecord"
+    recordsDataTest: str = f"{srcModelDirectory}/data/test_data.tfrecord"
+    recordsDataValidation: str = f"{srcModelDirectory}/data/validation_data.tfrecord"
+
     SelfPlayModelFilename: str ="self_play_model"
     
     samplePgn: str = f"{srcModelDirectory}/pgn/sample_dataset/"
@@ -33,11 +39,11 @@ class Settings(BaseSettings):
     endgame_table: str = f"{srcModelDirectory}/data/EndgameTbl/"
     minimumEndgamePieces: int = 5
     trainModel: bool = False
-    selfTrain: bool = True
+    selfTrain: bool = False
     trainDataExists: bool = True
-    useSamplePgn: bool = False
+    useSamplePgn: bool = True
     saveToBucket: bool = False
-    tuneParameters: bool = True
+    tuneParameters: bool = False
 
     #MCST parameters:
     UCB_Constant: float = 0.1

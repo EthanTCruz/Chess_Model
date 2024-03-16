@@ -76,11 +76,22 @@ def main():
     #board = chess.Board(fen='8/8/6K1/8/2k5/2P2R2/1P6/8 w - - 0 44')
     #test_endgame(board=board)
     #train_and_test_model()
+    
     #pgn_to_db()
-
+    test_data_generator()
     #highest_scoring_move()
 
     return 0
+
+def test_data_generator():
+    dg = cnn_data_generator(filename=scores_file,target_feature=target_features,
+            test_size=test_size,ModelFilename = ModelFilename,
+            ModelFilePath=ModelFilePath,player='w',
+            predictions_board=predictions_board,
+            trainModel=s.trainModel)
+
+    # dg.parser()
+    dg.initialize_datasets_records()
 
 def delete_files_in_directory(directory):
     for filename in os.listdir(directory):
@@ -111,7 +122,9 @@ def pgn_to_db(db: Session = SessionLocal()):
     cowsay.cow(f"Generating feature data from pgn boards in csv: {scores_file}")
     gam_an_obj = cnn_game_analyzer(scores_file=scores_file)
     gam_an_obj.open_endgame_tables()
-    gam_an_obj.process_sqlite_boards()
+    gam_an_obj.process_sqlite_boards_to_records()
+    # gam_an_obj.process_sqlite_boards_pooling()
+    # gam_an_obj.process_sqlite_boards()
     gam_an_obj.close_endgame_tables()
     del gam_an_obj
     
