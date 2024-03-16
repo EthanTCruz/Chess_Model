@@ -123,6 +123,14 @@ def fetch_all_game_positions(db: Session = next(get_db())):
         db.close()
         yield None
 
+def fetch_one_game_position(db: Session = next(get_db())):
+    try:
+        # Querying the first record in GamePositions
+        game_position = db.query(GamePositions).first()
+        return game_position
+    finally:
+        db.close()
+
 class GamePositionWithWinBuckets:
     def __init__(self, piece_positions, castling_rights, en_passant, turn, greater_than_n_half_moves, white_wins, black_wins, stalemates):
         self.piece_positions = piece_positions

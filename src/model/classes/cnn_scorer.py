@@ -230,7 +230,7 @@ class boardCnnEval:
 
         total_pieces = black_pieces + white_pieces
 
-        dict_results["all defended positions"] = total_pieces
+        dict_results["all defended positions"] = total_pieces.flatten()
 
         return dict_results
 
