@@ -145,6 +145,23 @@ class boardCnnEval:
         dict_results.update(game_results)
         return dict_results
     
+    
+    def get_board_scores_records(self):
+        dict_results = {}
+
+        dict_results["metadata"] = self.get_metadata()
+
+
+
+        dict_results["positions_data"] = self.get_positions()
+
+
+        
+        dict_results["game_results"] = self.get_game_results()
+
+        return dict_results    
+
+
     def get_positions(self):
         dict_results = {}
 

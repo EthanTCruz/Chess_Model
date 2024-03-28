@@ -14,6 +14,14 @@ from Chess_Model.src.model.classes.sqlite.dependencies import  fetch_all_game_po
 from Chess_Model.src.model.classes.sqlite.models import GamePositions
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 
+metadata_key = 'metadata'
+bitboards_key = 'positions_data'
+results_key = 'game_results'
+feature_description = {
+    'bitboards': tf.io.FixedLenFeature([], tf.string),
+    'metadata': tf.io.FixedLenFeature([], tf.string),
+    'target': tf.io.FixedLenFeature([], tf.string),
+}
 
 class game_analyzer:
     def __init__(self,**kwargs) -> None:
@@ -177,15 +185,24 @@ class game_analyzer:
                     try:
                         if game:
                             self.evaluator.setup_parameters_gamepositions(game=game)
-                            score = self.evaluator.get_board_scores()
+                            score = self.evaluator.get_board_scores_records()
 
-                            serialized_data = serialize_example(score)
+                            serialized_data = serialize_data(score)
+                            
+                            features = {
+                            'bitboards': _bytes_feature(serialized_data[0].numpy()),
+                            'metadata': _bytes_feature(serialized_data[1].numpy()),
+                            'target': _bytes_feature(serialized_data[2].numpy())
+                            }
+                            
+                            serialized_data = tf.train.Example(features=tf.train.Features(feature=features))
+
                             serialized_examples.append(serialized_data)
 
                             # Check if we've accumulated enough examples to write a batch
                             if len(serialized_examples) >= batch_size:
                                 for serialized_example in serialized_examples:
-                                    writer.write(serialized_example)
+                                    writer.write(serialized_example.SerializeToString())
                                 serialized_examples = []  # Reset the list after writing
                         else:
                             return 1
@@ -227,42 +244,43 @@ def create_feature_description(data):
             raise ValueError(f"Unsupported data type: {type(value)} for key: {key}")
     return feature_description
 
-
-
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
-    if isinstance(value, type(tf.constant(0))):
-        value = value.numpy()  # BytesList won't unpack a string from an EagerTensor
-    return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+    if not isinstance(value, list):
+        value = [value]
+    return tf.train.Feature(bytes_list=tf.train.BytesList(value=value))
 
-def _float_feature(value):
-    """Returns a float_list from a float / double."""
-    return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+def serialize_tensor(tensor):
+    return tf.io.serialize_tensor(tf.convert_to_tensor(tensor, dtype=tensor.dtype))
 
-def _int64_feature(value):
-    """Returns an int64_list from a bool / enum / int / uint."""
-    return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
-def serialize_example(features):
-    """
-    Creates a tf.train.Example message ready to be written to a file.
-    """
-    # Create a dictionary mapping the feature name to the tf.train.Feature
-    feature = {}
-    for key, value in features.items():
-        if key in ['white mean', 'black mean', 'stalemate mean']:
-            feature[key] = _float_feature(value)
-        elif isinstance(value, int):
-            feature[key] = _float_feature(value)
-            # feature[key] = _int64_feature(value)
-        elif isinstance(value, float):
-            feature[key] = _float_feature(value)
-        elif isinstance(value, np.ndarray):
-            # Flatten the array and convert it to bytes
-            flat_array = value.tolist()
-            feature[key] = _bytes_feature(tf.io.serialize_tensor(flat_array))
-        else:
-            raise ValueError(f"Unsupported data type: {type(value)} for key: {key}")
+
+def split_board_scores(scores_dict: dict):
+    # Collect all values within the nested metadata dictionary
+    metadata = list(scores_dict[metadata_key].values())
+    # metadata = []
+    # for key, value in scores_dict['metadata'].items():
+    #     metadata += [value]
+
+    # For positions_data, it's a bit tricky since it looks like it might contain arrays.
+    # Assuming you want to keep these arrays intact:
+    bitboards = list(scores_dict[bitboards_key].values())
     
-    # Create a Features message using tf.train.Example
-    example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
-    return example_proto.SerializeToString()
+    # Collect all values within the game_results dictionary
+    game_results = list(scores_dict[results_key].values())
+    
+    return bitboards, metadata, game_results
+
+def serialize_data(scores_dict):
+
+        bb,md,gr = split_board_scores(scores_dict)
+        
+        bitboards_tensor = tf.stack([tf.convert_to_tensor(board, dtype=tf.int8) for board in bb])
+        serialized_bitboards = tf.io.serialize_tensor(bitboards_tensor)
+        
+        metadata_tensor = tf.convert_to_tensor(md,dtype=tf.float16)
+        serialized_metadata = serialize_tensor(metadata_tensor)
+        
+        target_tensor = tf.convert_to_tensor(gr,dtype=tf.float16)
+        serialized_target = serialize_tensor(target_tensor)
+        
+        return serialized_bitboards, serialized_metadata, serialized_target

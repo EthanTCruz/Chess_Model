@@ -12,6 +12,7 @@ def configure_gpu_memory_growth():
             print(e)
 
 configure_gpu_memory_growth()
+
 from Chess_Model.src.model.classes.cnn_game_analyzer import game_analyzer
 import numpy as np
 import chess
@@ -21,10 +22,10 @@ from joblib import dump, load
 from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_blob
 import math
 from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator
+from Chess_Model.src.model.classes.cnn_recordGenerator import record_generator
 from datetime import datetime
-from tensorflow.keras.layers import Input, Multiply,Add, Conv2D, GlobalAveragePooling2D, MaxPooling2D, Dense, Dropout, Flatten, Concatenate, BatchNormalization
+from tensorflow.keras.layers import Input, Dense, Flatten, Concatenate
 from tensorflow.keras.models import Model
-from tensorflow.keras.activations import relu, softmax
 
 class convolutional_neural_net():
 
@@ -136,12 +137,16 @@ class convolutional_neural_net():
             self.validation_size =  kwargs["nnValidationSize"]
  
 
-        self.dataGenerator = data_generator(**kwargs)
+        self.dataGenerator = record_generator(**kwargs)
+        # self.dataGenerator = data_generator(**kwargs)
         self.gcp_creds = s.GOOGLE_APPLICATION_CREDENTIALS
         self.bucket_name = s.BUCKET_NAME
         self.saveToBucket = s.saveToBucket
         self.log_dir = s.nnLogDir
         self.checkpoints = s.nnModelCheckpoint
+        self.recordsDataFileTrain = s.recordsDataTrain
+        self.recordsDataFileTest = s.recordsDataTest
+        self.recordsDataFileValidation = s.recordsDataValidation
 
 
     def load_scaler(self):
@@ -169,15 +174,16 @@ class convolutional_neural_net():
 
     def create_model(self,shapes_tuple):
         # Input layers
+        # bitboard_shape = Input(shape=shapes_tuple[0][0])
+        # metadata_shape = Input(shape=shapes_tuple[0][1])
         bitboard_shape = Input(shape=shapes_tuple[0])
         metadata_shape = Input(shape=shapes_tuple[1])
-
         # Process bitboards
-        x = Flatten()(bitboard_shape)
-        x = Dense(512, activation='relu')(x)
+        bitboard_input = Flatten()(bitboard_shape)
+        x = Dense(512, activation='relu')(bitboard_input)
 
         # Process metadata
-        y = Dense(32, activation='relu')(metadata_shape)
+        y = Dense(64, activation='relu')(metadata_shape)
 
         # Combine bitboard and metadata features
         combined = Concatenate()([x, y])
@@ -195,10 +201,13 @@ class convolutional_neural_net():
     
     def calc_step_sizes(self):
         batch_size = self.batch_size  # Batch size
-        training_size = self.get_row_count(filename=self.train_file)
+        
+        # training_size = self.get_row_count(filename=self.train_file)
+        training_size = count_records(self.recordsDataFileTrain)
         steps_per_epoch = math.ceil(training_size/batch_size)
         validation_batch = self.batch_size
-        validation_samples = self.get_row_count(filename=self.validation_file)
+        # validation_samples = self.get_row_count(filename=self.validation_file)
+        validation_samples = count_records(self.recordsDataFileValidation)
         validation_steps = math.ceil(validation_samples/validation_batch)
         return steps_per_epoch, validation_steps,batch_size
 
@@ -242,7 +251,7 @@ class convolutional_neural_net():
             # Evaluate the model on the test set
 
             
-            test_size = self.dataGenerator.test_dataset_size(filename=self.test_file)
+            test_size = count_records(self.recordsDataFileTest)
             steps = math.ceil((test_size - 1) / batch_size)
             loss, accuracy = model.evaluate(self.dataGenerator.test_data,steps=steps)
 
@@ -362,3 +371,9 @@ class convolutional_neural_net():
         data['white'] = data['prediction'].apply(lambda x: x[0])
         data.drop(columns=['prediction'])
         return data
+    
+def count_records(tfrecords_filename):
+    count = 0
+    for _ in tf.data.TFRecordDataset(tfrecords_filename):
+        count += 1
+    return count

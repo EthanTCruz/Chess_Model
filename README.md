@@ -57,3 +57,11 @@ Test loss: 0.3614208698272705
 Test accuracy: 0.8468728065490723
 
 https://stackoverflow.com/questions/69926198/generatordatasetopdataset-will-not-be-optimized-because-the-dataset-does-not-im
+
+Latest with addeed pgn's:
+epochs,loss,accuracy
+16,1.052001714706421,0.5005179047584534
+32,1.0865944623947144,0.3974415957927704
+
+shapes_tuple
+[(8, 8, 50), (40,)]
