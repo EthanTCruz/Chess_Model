@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     nnEpochs: int = 100
     nnTestSize: float = 0.15
     nnValidationSize: float  = 0.15
-    
 
     srcModelDirectory: str = './Chess_Model/src/model'
     ModelFilePath: str =f"{srcModelDirectory}/chess_model/"

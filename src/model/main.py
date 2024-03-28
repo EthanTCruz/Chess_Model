@@ -16,7 +16,7 @@ from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.model_trainer import trainer
 from Chess_Model.src.model.classes.endgame import endgamePicker
 
-
+from Chess_Model.src.model.classes.cnn_recordGenerator import record_generator
 from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator as cnn_data_generator
 from Chess_Model.src.model.classes.cnn_game_analyzer import game_analyzer as cnn_game_analyzer
 from Chess_Model.src.model.classes.cnn_model import convolutional_neural_net as cnn_model
@@ -77,20 +77,22 @@ def main():
     #test_endgame(board=board)
     #train_and_test_model()
     
-    #pgn_to_db()
-    test_data_generator()
+    # pgn_to_db()
+    # test_data_generator()
+    train_and_test_model()
     #highest_scoring_move()
 
     return 0
 
 def test_data_generator():
-    dg = cnn_data_generator(filename=scores_file,target_feature=target_features,
+    dg = record_generator(filename=scores_file,target_feature=target_features,
             test_size=test_size,ModelFilename = ModelFilename,
             ModelFilePath=ModelFilePath,player='w',
             predictions_board=predictions_board,
             trainModel=s.trainModel)
 
     # dg.parser()
+
     dg.initialize_datasets_records()
 
 def delete_files_in_directory(directory):
@@ -121,11 +123,11 @@ def pgn_to_db(db: Session = SessionLocal()):
     del pgn_obj
     cowsay.cow(f"Generating feature data from pgn boards in csv: {scores_file}")
     gam_an_obj = cnn_game_analyzer(scores_file=scores_file)
-    gam_an_obj.open_endgame_tables()
+    #gam_an_obj.open_endgame_tables()
     gam_an_obj.process_sqlite_boards_to_records()
     # gam_an_obj.process_sqlite_boards_pooling()
     # gam_an_obj.process_sqlite_boards()
-    gam_an_obj.close_endgame_tables()
+    #gam_an_obj.close_endgame_tables()
     del gam_an_obj
     
     return 0 
@@ -221,19 +223,27 @@ def tune_parameters():
 
     for e in epoch_sizes:
 
-        nn = cnn_model(filename=scores_file,target_feature=target_features,
-            test_size=test_size,ModelFilename = ModelFilename,
-            ModelFilePath=ModelFilePath,player='w',
-            predictions_board=predictions_board,epochs=e,
-            trainModel=s.trainModel)
+
         
-        loss,accuracy = nn.create_and_evaluate_model()
+        loss,accuracy = train_and_test_model(epochs=e)
 
         with open(eval_file, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             row = [e,loss,accuracy]
             writer.writerow(row)
     return 0
+
+def train_and_test_model(epochs: int = 16):
+    nn = cnn_model(filename=scores_file,target_feature=target_features,
+        test_size=test_size,ModelFilename = ModelFilename,
+        ModelFilePath=ModelFilePath,player='w',
+        predictions_board=predictions_board,epochs=epochs,
+        trainModel=s.trainModel)
+    
+    loss,accuracy = nn.create_and_evaluate_model()
+    print(f"epochs: {epochs}, loss: {loss}, accuracy: {accuracy}")
+    return loss, accuracy
+
 
 def create_csv():
     # Check if the file exists and remove it
