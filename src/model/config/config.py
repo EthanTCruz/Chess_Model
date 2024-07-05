@@ -57,6 +57,25 @@ class Settings(BaseSettings):
     BUCKET_NAME: str = "chess-model-weights"
     matrixScalerFile: str = f"{srcModelDirectory}/data/matrixScaler.joblib"
 
+    # Mongo settings
+
+    validation_collection_key: str = "validation_data"
+    testing_collection_key: str = "testing_data"
+    training_collection_key: str = "training_data"
+    main_collection_key: str = "main_collection"
+
+    db_name: str = "mydatabase"
+    metadata_key: str = 'metadata'
+    bitboards_key: str = 'positions_data'
+    results_key: str = 'game_results'
+
+    mongo_host: str = "localhost"
+    mongo_port: int = 27017
+
+    mongo_url: str = f"mongodb://{mongo_host}:{mongo_port}/"
+    
+    num_workers: int = 0
+
     halfMoveBin: int = 25
     
     class Config:

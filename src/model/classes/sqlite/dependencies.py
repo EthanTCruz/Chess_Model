@@ -180,6 +180,9 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
             )
             yield game
 
+    except GeneratorExit:
+
+        return
 
     finally:
         db.close()

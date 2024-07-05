@@ -31,6 +31,8 @@ terraform plan -var-file="variables.tfvars" -target=module.my_module
 terraform plan -var-file="variables.tfvars" -target="google_container_cluster.gke_cluster" -target="google_container_node_pool.primary_nodes"
 terraform apply -var-file="variables.tfvars" -target="google_container_cluster.gke_cluster" -target="google_container_node_pool.primary_nodes"
 
+gcloud container clusters get-credentials my-gke-cluster --zone us-central1-a --project sourcer-app-413822
+
 terraform plan -var-file="variables.tfvars" -target="kubernetes_pod.high_resource_ml_pod" 
 terraform apply -var-file="variables.tfvars" -target="kubernetes_pod.high_resource_ml_pod"
 

@@ -16,11 +16,15 @@ from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.model_trainer import trainer
 from Chess_Model.src.model.classes.endgame import endgamePicker
 
-from Chess_Model.src.model.classes.cnn_recordGenerator import record_generator
-from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator as cnn_data_generator
-from Chess_Model.src.model.classes.cnn_game_analyzer import game_analyzer as cnn_game_analyzer
-from Chess_Model.src.model.classes.cnn_model import convolutional_neural_net as cnn_model
-from Chess_Model.src.model.classes.cnn_move_picker import move_picker as cnn_move_picker
+# from Chess_Model.src.model.classes.cnn_recordGenerator import record_generator
+# from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator as cnn_data_generator
+# from Chess_Model.src.model.classes.cnn_game_analyzer import game_analyzer as cnn_game_analyzer
+# from Chess_Model.src.model.classes.cnn_model import convolutional_neural_net as cnn_model
+# from Chess_Model.src.model.classes.cnn_move_picker import move_picker as cnn_move_picker
+
+from Chess_Model.src.model.classes.mongo_functions import mongo_data_pipe
+from Chess_Model.src.model.classes.torch_model import model_operator
+
 
 s = Settings()
 ModelFilePath=s.ModelFilePath
@@ -54,11 +58,12 @@ nn_kwargs["trainModel"]=s.trainModel
 nn_kwargs["batch_size"]=batch_size
 #nn = neural_net(**nn_kwargs)
 
-nn = cnn_model(**nn_kwargs)
+# nn = cnn_model(**nn_kwargs)
 
-mp = cnn_move_picker(neuralNet=nn)
+# mp = cnn_move_picker(neuralNet=nn)
 
 
+mf = mongo_data_pipe()
 
 
 
@@ -66,23 +71,42 @@ def main():
     #test()
     #test_process_fen()
     #highest_scoring_move()
-    if s.tuneParameters:
-        tune_parameters()
+    # if s.tuneParameters:
+    #     tune_parameters()
 
-    # if s.trainModel:
-    #     train_and_test_model()
-    if s.selfTrain:
-        test_self_train()
+    # # if s.trainModel:
+    # #     train_and_test_model()
+    # if s.selfTrain:
+    #     test_self_train()
     #board = chess.Board(fen='8/8/6K1/8/2k5/2P2R2/1P6/8 w - - 0 44')
     #test_endgame(board=board)
     #train_and_test_model()
     
     # pgn_to_db()
     # test_data_generator()
-    train_and_test_model()
+    test_pt_model()
+    # train_and_test_model()
     #highest_scoring_move()
 
     return 0
+
+
+
+def reset_collections():
+    mf.delete_collection_documents()
+
+def initialize_data():
+    mf.initialize_data()
+
+def train_model():
+    model.Create_and_Train_Model()
+
+def test_pt_model():
+    mf.open_connections()
+    mf.delete_collection_documents()
+    mf.initialize_data()
+    model = model_operator(mf)
+    model.Create_and_Train_Model()
 
 def test_data_generator():
     dg = record_generator(filename=scores_file,target_feature=target_features,
@@ -256,6 +280,8 @@ def create_csv():
 
         columns = ["epochs","loss","accuracy"]
         writer.writerow(columns)
+
+
 
 
 if __name__ == "__main__":
