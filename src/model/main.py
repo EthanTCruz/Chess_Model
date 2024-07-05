@@ -63,7 +63,7 @@ nn_kwargs["batch_size"]=batch_size
 # mp = cnn_move_picker(neuralNet=nn)
 
 
-mf = mongo_data_pipe()
+mdp = mongo_data_pipe()
 
 
 
@@ -93,19 +93,18 @@ def main():
 
 
 def reset_collections():
-    mf.delete_collection_documents()
+    mdp.delete_collection_documents()
 
 def initialize_data():
-    mf.initialize_data()
+    mdp.initialize_data()
 
-def train_model():
-    model.Create_and_Train_Model()
+
 
 def test_pt_model():
-    mf.open_connections()
-    mf.delete_collection_documents()
-    mf.initialize_data()
-    model = model_operator(mf)
+    mdp.open_connections()
+    mdp.delete_collection_documents()
+    mdp.initialize_data()
+    model = model_operator()
     model.Create_and_Train_Model()
 
 def test_data_generator():

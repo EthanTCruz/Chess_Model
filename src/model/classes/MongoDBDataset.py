@@ -1,11 +1,17 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
-from Chess_Model.src.model.classes.mongo_functions import mongo_data_pipe
+from Chess_Model.src.model.classes.mongo_functions import mongo_data_pipe,iteratingFunctionScaled
 from pymongo import MongoClient
+from Chess_Model.src.model.config.config import Settings
+import numpy as np
 
 class MongoDBDataset(Dataset):
     def __init__(self, mdp,collectionName, mongoUrl, dbName, batch_size=1):
+        s = Settings()
 
+        self.means = np.load(s.np_means_file)
+        self.stds = np.load(s.np_stds_file)
+        
         self.batch_size = batch_size
         
 
@@ -26,8 +32,10 @@ class MongoDBDataset(Dataset):
 
     def _load_data(self):
         try:
-            for doc in self.mdp.iteratingFunctionScaled(collection=self.collection,
-                                               batch_size=self.batch_size):
+            for doc in iteratingFunctionScaled(collection=self.collection,
+                                               batch_size=self.batch_size,
+                                               means = self.means,
+                                               stds = self.stds):
                 self.data.append(doc)
             print(f"Loaded {len(self.data)} documents.")
         except Exception as e:

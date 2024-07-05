@@ -65,7 +65,7 @@ class model_operator():
     def __init__(self,mdp):
 
         s = Settings()
-        self.mdp = mdp
+        
         self.collectionName=s.training_collection_key
         self.mongoUrl=s.mongo_url
         self.dbName=s.db_name
@@ -77,8 +77,7 @@ class model_operator():
         dataset = MongoDBDataset(collectionName=self.collectionName, 
                         mongoUrl=self.mongoUrl, 
                         dbName=self.dbName, 
-                        batch_size=self.genBatchSize,
-                        mdp=self.mdp)
+                        batch_size=self.genBatchSize)
         
         if len(dataset) == 0:
             print("Dataset is empty. Please check the data loading process.")

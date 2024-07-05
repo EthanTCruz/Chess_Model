@@ -80,6 +80,8 @@ class mongo_data_pipe():
             self.nnValidationSize = kwargs["nnValidationSize"]    
 
         
+        self.np_means_file = s.np_means_file
+        self.np_stds_file = s.np_stds_file
 
         self.evaluator = boardCnnEval()    
 
@@ -157,23 +159,13 @@ class mongo_data_pipe():
     def initialize_data(self):
         # self.process_sqlite_boards_to_mongo()
         self.shuffle_and_split_set(batch_size = 100, yield_size = 1)
-        self.train_mean, self.train_std = self.calc_mongo_train()
-        return self.train_mean, self.train_std
+        train_mean, train_std = self.calc_mongo_train()
+        
+        np.save(self.np_means_file,train_mean)
+        np.save(self.np_stds_file,train_std)
 
-    def iteratingFunctionScaled(self,collection,batch_size: int = 1000):
-        try:
+        return train_mean, train_std
 
-            batch = collection.find({}, {'_id': 0}, batch_size = batch_size)
-
-            for doc in batch:
-                
-                doc['positions_data'] = create_cnn_input(doc['positions_data'])
-                doc['metadata'] = (doc['metadata'] - self.train_mean) / self.train_std
-                doc['game_results'] = np.array(doc['game_results'])
-                yield doc
-
-        except Exception as e:
-            print("Error occured!: ",e)
 
     def check_collection_sizes(self):
         collection_stats = self.db.command("collstats", self.testing_collection_key)
@@ -343,3 +335,18 @@ def get_hash_id(doc):
     hash_object = hashlib.sha256(dict_string.encode())
     hex_dig = hash_object.hexdigest()
     return hex_dig
+
+def iteratingFunctionScaled(collection,means,stds,batch_size: int = 1000):
+    try:
+
+        batch = collection.find({}, {'_id': 0}, batch_size = batch_size)
+
+        for doc in batch:
+            
+            doc['positions_data'] = create_cnn_input(doc['positions_data'])
+            doc['metadata'] = (doc['metadata'] - means) / stds
+            doc['game_results'] = np.array(doc['game_results'])
+            yield doc
+
+    except Exception as e:
+        print("Error occured!: ",e)

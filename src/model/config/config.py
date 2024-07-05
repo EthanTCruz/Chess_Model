@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings
 from math import sqrt
 class Settings(BaseSettings): 
+
+    
     nnGenBatchSize: int = 1
     nnScalarBatchSize: int = 10
     nnBatchSize: int = 100
@@ -9,6 +11,8 @@ class Settings(BaseSettings):
     nnValidationSize: float  = 0.15
 
     srcModelDirectory: str = './Chess_Model/src/model'
+    data_dir: str = f"{srcModelDirectory}/data"
+
     ModelFilePath: str =f"{srcModelDirectory}/chess_model/"
     ModelFilename: str = "model.h5"
     scores_file: str = f"{srcModelDirectory}/data/data.csv"
@@ -68,6 +72,9 @@ class Settings(BaseSettings):
     metadata_key: str = 'metadata'
     bitboards_key: str = 'positions_data'
     results_key: str = 'game_results'
+
+    np_means_file: str = f"{data_dir}/means.npy"
+    np_stds_file: str = f"{data_dir}/stds.npy"
 
     mongo_host: str = "localhost"
     mongo_port: int = 27017
