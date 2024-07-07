@@ -92,20 +92,19 @@ def main():
 
 
 
-def reset_collections():
-    mdp.delete_collection_documents()
 
-def initialize_data():
-    mdp.initialize_data()
 
 
 
 def test_pt_model():
     mdp.open_connections()
+    
+    #main collection is removed from this function
     mdp.delete_collection_documents()
     mdp.initialize_data()
+    mdp.close_connections()
     model = model_operator()
-    model.Create_and_Train_Model()
+    model.Create_and_Train_Model(num_workers = 0)
 
 def test_data_generator():
     dg = record_generator(filename=scores_file,target_feature=target_features,
@@ -143,15 +142,15 @@ def pgn_to_db(db: Session = SessionLocal()):
     pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
     cowsay.cow(f"Converting pgn file to db: {games_csv_file}")    
     pgn_obj.pgn_fen_to_sqlite(db = db)
-    del pgn_obj
-    cowsay.cow(f"Generating feature data from pgn boards in csv: {scores_file}")
-    gam_an_obj = cnn_game_analyzer(scores_file=scores_file)
-    #gam_an_obj.open_endgame_tables()
-    gam_an_obj.process_sqlite_boards_to_records()
-    # gam_an_obj.process_sqlite_boards_pooling()
-    # gam_an_obj.process_sqlite_boards()
-    #gam_an_obj.close_endgame_tables()
-    del gam_an_obj
+    # del pgn_obj
+    # cowsay.cow(f"Generating feature data from pgn boards in csv: {scores_file}")
+    # gam_an_obj = cnn_game_analyzer(scores_file=scores_file)
+    # #gam_an_obj.open_endgame_tables()
+    # gam_an_obj.process_sqlite_boards_to_records()
+    # # gam_an_obj.process_sqlite_boards_pooling()
+    # # gam_an_obj.process_sqlite_boards()
+    # #gam_an_obj.close_endgame_tables()
+    # del gam_an_obj
     
     return 0 
 

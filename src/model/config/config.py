@@ -2,10 +2,14 @@ from pydantic_settings import BaseSettings
 from math import sqrt
 class Settings(BaseSettings): 
 
+    BatchSize: int = 1024
     
     nnGenBatchSize: int = 1
-    nnScalarBatchSize: int = 10
+    
     nnBatchSize: int = 100
+
+    nnScalarBatchSize: int = 10
+    
     nnEpochs: int = 100
     nnTestSize: float = 0.15
     nnValidationSize: float  = 0.15
@@ -44,7 +48,7 @@ class Settings(BaseSettings):
     trainModel: bool = False
     selfTrain: bool = False
     trainDataExists: bool = True
-    useSamplePgn: bool = True
+    useSamplePgn: bool = False
     saveToBucket: bool = False
     tuneParameters: bool = False
 
@@ -75,6 +79,8 @@ class Settings(BaseSettings):
 
     np_means_file: str = f"{data_dir}/means.npy"
     np_stds_file: str = f"{data_dir}/stds.npy"
+
+    torch_model_file: str = f"{srcModelDirectory}/chess_model/torch_model.pth"
 
     mongo_host: str = "localhost"
     mongo_port: int = 27017

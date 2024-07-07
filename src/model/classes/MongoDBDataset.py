@@ -6,7 +6,7 @@ from Chess_Model.src.model.config.config import Settings
 import numpy as np
 
 class MongoDBDataset(Dataset):
-    def __init__(self, mdp,collectionName, mongoUrl, dbName, batch_size=1):
+    def __init__(self, collectionName, mongoUrl, dbName, batch_size=1024):
         s = Settings()
 
         self.means = np.load(s.np_means_file)
@@ -19,8 +19,6 @@ class MongoDBDataset(Dataset):
         db = client[dbName]
         self.collection = db[collectionName]
 
-        
-        self.mdp = mdp
 
         
         self.data = []

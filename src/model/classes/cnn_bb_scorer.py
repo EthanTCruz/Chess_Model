@@ -157,4 +157,18 @@ def board_to_bitboards(board):
             # color_name = 'White' if color == chess.WHITE else 'Black'
             # piece_name = chess.piece_name(piece_type).capitalize()
             bitboards.append(bitboard)
+    ep_board = en_passant_bitboard(board=board)
+    bitboards.append(ep_board)
     return bitboards
+
+def en_passant_bitboard(board):
+
+    en_passant_square = board.ep_square
+    
+
+    bitboard = 0
+
+    if en_passant_square is not None:
+        bitboard |= chess.BB_SQUARES[en_passant_square]
+    
+    return bitboard

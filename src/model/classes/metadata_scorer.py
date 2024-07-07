@@ -22,6 +22,7 @@ class metaDataBoardEval:
 
     def setup_parameters_gamepositions(self,game: GamePositions):
         self.game = game  
+
         #have to reconstruct full fen instead of just piece_positions
         if game.greater_than_n_half_moves == 1:
             half_moves = self.half_move_amount
@@ -157,7 +158,43 @@ class metaDataBoardEval:
         dict_results["checkmate"] = sum(win)
         dict_results["stalemate"] = self.is_stalemate()
 
+        essentials_dict = self.base_game_dict()
+
+        dict_results.update(essentials_dict)
+
         return dict_results
+    
+    def base_game_dict(self):
+        results = {}
+
+        if 'K' in self.game.castling_rights:
+            results["white kingside castling"] = 1
+        else:
+            results["white kingside castling"] = 0
+
+        if 'k' in self.game.castling_rights:
+            results["black kingside castling"] = 1
+        else:
+            results["black kingside castling"] = 0
+        
+        if 'Q' in self.game.castling_rights:
+            results["white queenside castling"] = 1
+        else:
+            results["white queenside castling"] = 0
+
+        if 'q' in self.game.castling_rights:
+            results["black queenside castling"] = 1
+        else:
+            results["black queenide castling"] = 0
+
+        if 'b' == self.game.turn:
+            results["white turn"] = 0
+        else:
+            results["white turn"] = 1
+        
+        results["greater than n half moves"] = self.game.greater_than_n_half_moves
+
+        return results 
     
 
     def is_queen_in_danger(self,white: bool):

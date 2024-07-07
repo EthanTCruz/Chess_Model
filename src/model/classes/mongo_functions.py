@@ -1,8 +1,10 @@
-from pymongo import MongoClient
+from pymongo import MongoClient, InsertOne
+
 import numpy as np
 import hashlib
 import json
 from tqdm import tqdm
+import time
 
 from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
@@ -79,6 +81,10 @@ class mongo_data_pipe():
         else:
             self.nnValidationSize = kwargs["nnValidationSize"]    
 
+        if "BatchSize" not in kwargs:
+            self.batch_size=s.BatchSize
+        else:
+            self.batch_size = kwargs["BatchSize"]  
         
         self.np_means_file = s.np_means_file
         self.np_stds_file = s.np_stds_file
@@ -101,6 +107,16 @@ class mongo_data_pipe():
         self.train_collection = self.db[self.training_collection_key]
 
         return 1
+    
+    def close_connections(self):
+        if self.client:
+            self.client.close()
+            self.client = None
+            self.db = None
+            self.main_collection = None
+            self.test_collection = None
+            self.valid_collection = None
+            self.train_collection = None
 
 
 
@@ -117,7 +133,7 @@ class mongo_data_pipe():
 
 
     
-    def shuffle_and_split_set(self, batch_size:int = 100, yield_size:int = 1):
+    def shuffle_and_split_set(self ):
         i = 0
         collections_and_keys = [[self.testing_collection_key, self.test_collection],
                                 [self.validation_collection_key, self.valid_collection], 
@@ -142,7 +158,7 @@ class mongo_data_pipe():
             collected_docs[collection].append(doc)
             
             i += 1
-            if i >= batch_size:
+            if i >= self.batch_size:
                 
                 for key,collection_client in collections_and_keys:
                     if collected_docs[key] == []:
@@ -155,10 +171,55 @@ class mongo_data_pipe():
                     self.training_collection_key:[]}
                 i = 0
         return 1
+    
+    def shuffle_and_split_set_bulk(self):
+        self.open_connections()
+        validation_min = self.nnValidationSize * 100
+        test_min = self.nnTestSize * 100 + validation_min
+        collected_docs = {self.testing_collection_key: [], self.validation_collection_key: [], self.training_collection_key: []}
+        collections_and_keys = [(self.testing_collection_key, self.test_collection), 
+                                (self.validation_collection_key, self.valid_collection), 
+                                (self.training_collection_key, self.train_collection)]
+
+        i = 0
+        for doc in iteratingFunction(collection=self.main_collection):
+            bin = get_hash_ring_value(id=doc['_id'])
+            collection = self.collection_decider(hash_value=bin, validation_min=validation_min, test_min=test_min)
+            collected_docs[collection].append(doc)
+            i += 1
+            if i >= self.batch_size:
+                self.bulk_insert(collected_docs, collections_and_keys)
+                collected_docs = {self.testing_collection_key: [], self.validation_collection_key: [], self.training_collection_key: []}
+                i = 0
+
+        if any(collected_docs.values()):
+            self.bulk_insert(collected_docs, collections_and_keys)
+        return 1
+
+    def bulk_insert(self, collected_docs, collections_and_keys):
+        for key, collection_client in collections_and_keys:
+            if collected_docs[key]:
+                requests = [InsertOne(doc) for doc in collected_docs[key]]
+                collection_client.bulk_write(requests)
             
     def initialize_data(self):
         # self.process_sqlite_boards_to_mongo()
-        self.shuffle_and_split_set(batch_size = 100, yield_size = 1)
+        # start_time_bulk = time.time()
+        # self.shuffle_and_split_set_bulk()
+        # end_time_bulk = time.time()
+        # duration_bulk = end_time_bulk - start_time_bulk
+        # print(f"shuffle_and_split_set_bulk duration: {duration_bulk:.4f} seconds")
+        
+        self.valid_collection.delete_many({})
+        self.test_collection.delete_many({})
+        self.train_collection.delete_many({})
+
+        # Measure time for shuffle_and_split_set
+        # start_time = time.time()
+        self.shuffle_and_split_set()
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # print(f"shuffle_and_split_set duration: {duration:.4f} seconds")
         train_mean, train_std = self.calc_mongo_train()
         
         np.save(self.np_means_file,train_mean)
@@ -179,16 +240,16 @@ class mongo_data_pipe():
     
     
 
-    def calc_mongo_train(self,batch_size: int = 1000):
+    def calc_mongo_train(self):
         collection_stats = self.db.command("collstats", self.training_collection_key)
         m = int(collection_stats['count']) 
         sample_doc = self.train_collection.find_one({})
         n = len(list(sample_doc['metadata']))
-        mean = self.calc_mean(m=m,n=n,batch_size = batch_size)
-        std = self.calc_std(m=m,n=n,mean=mean,batch_size = batch_size)
+        mean = self.calc_mean(m=m,n=n)
+        std = self.calc_std(m=m,n=n,mean=mean)
         return mean, std
 
-    def calc_mean(self,m,n,batch_size: int = 1000):
+    def calc_mean(self,m,n):
         mean = np.zeros((1, n))
         md_lists = []
         i  = 0
@@ -196,11 +257,11 @@ class mongo_data_pipe():
         
 
             
-        for doc in self.train_collection.find({}, {'metadata': 1,'_id': 0},batch_size = batch_size):
+        for doc in self.train_collection.find({}, {'metadata': 1,'_id': 0},batch_size = self.batch_size):
             md_lists.append(doc['metadata'])
             i += 1
             total_docs += 1
-            if i >= batch_size:
+            if i >= self.batch_size:
 
                 mean, md_lists = mean_aggregate(curr_md_list=md_lists, curr_mean=mean)
                 i = 0
@@ -213,17 +274,17 @@ class mongo_data_pipe():
         return mean
         
 
-    def calc_std(self,m,n,mean,batch_size: int = 1000):    
+    def calc_std(self,m,n,mean):    
         std = np.zeros((1, n))
         md_lists = []
         i  = 0
         total_docs = 0
         
-        for doc in self.train_collection.find({}, {'metadata': 1,'_id': 0},batch_size = batch_size):
+        for doc in self.train_collection.find({}, {'metadata': 1,'_id': 0},batch_size = self.batch_size):
             md_lists.append(doc['metadata'])
             i += 1
             total_docs += 1
-            if i >= batch_size:
+            if i >= self.batch_size:
                 std, md_lists = std_aggregate(curr_md_list = md_lists,curr_std = std,mean = mean)
                 i = 0
                 
@@ -236,10 +297,10 @@ class mongo_data_pipe():
         return std
 
 
-    def process_sqlite_boards_to_mongo(self,batch_size: int = 1):
+    def process_sqlite_boards_to_mongo(self,batch_size: int = 512):
         with SessionLocal() as db:
             row_count = get_rollup_row_count(db=db)
-            batch = fetch_all_game_positions_rollup(yield_size=500, db=db)
+            batch = fetch_all_game_positions_rollup(yield_size=512, db=db)
             dataset = []  # List to accumulate serialized examples
             for game in tqdm(batch, total=row_count, desc="Processing Feature Data"):
                 try:
@@ -266,6 +327,7 @@ class mongo_data_pipe():
     def game_to_doc_evaluation(self,game):
         self.evaluator.setup_parameters_gamepositions(game=game)
         board_scores = self.evaluator.get_board_scores()
+
         document = {
             "metadata": board_scores['metadata'],  # Ensure this does not contain large integers
             "positions_data": convert_large_ints(board_scores['positions_data']),
