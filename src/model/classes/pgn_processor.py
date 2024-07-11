@@ -78,5 +78,3 @@ def count_games_in_pgn(pgn_file):
         while chess.pgn.read_game(pgn) is not None:
             count += 1
     return count
-
-

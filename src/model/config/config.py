@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     nnScalarBatchSize: int = 10
     
     nnEpochs: int = 100
-    nnTestSize: float = 0.15
-    nnValidationSize: float  = 0.15
+    nnTestSize: float = 0.02
+    nnValidationSize: float  = 0.02
 
     srcModelDirectory: str = './Chess_Model/src/model'
     data_dir: str = f"{srcModelDirectory}/data"
