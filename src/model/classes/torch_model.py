@@ -110,7 +110,10 @@ class model_operator():
                         num_workers=num_workers)
             return train_dataloader, test_dataloader, valid_dataloader
     
-    def Create_and_Train_Model(self, learning_rate: float = 0.001, num_epochs: int = 5, num_workers: int = 0):
+    def Create_and_Train_Model(self, 
+                               learning_rate: float = 0.001, 
+                               num_epochs: int = 16, 
+                               num_workers: int = 0):
         if num_workers < self.num_workers:
             num_workers = self.num_workers
         
@@ -143,6 +146,7 @@ class model_operator():
             
             avg_train_loss = running_loss / len(train_dataloader)
             train_accuracy = correct_samples / total_samples * 100
+            
             
             avg_val_loss, val_accuracy = self.evaluate(model, valid_dataloader, criterion, device)
 

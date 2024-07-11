@@ -44,6 +44,7 @@ eval_file = s.evalModeFile
 if s.useSamplePgn:
     pgn_file=s.samplePgn
 
+
 target_features = ["white mean","black mean","stalemate mean"]
 nn_kwargs = {}
 nn_kwargs["filename"]=scores_file
@@ -104,7 +105,7 @@ def test_pt_model():
     mdp.initialize_data()
     mdp.close_connections()
     model = model_operator()
-    model.Create_and_Train_Model(num_workers = 0)
+    model.Create_and_Train_Model(num_workers = 0,num_epochs=16)
 
 def test_data_generator():
     dg = record_generator(filename=scores_file,target_feature=target_features,
@@ -141,7 +142,7 @@ def pgn_to_db(db: Session = SessionLocal()):
 
     pgn_obj = pgn_processor(pgn_file=pgn_file,csv_file=games_csv_file)
     cowsay.cow(f"Converting pgn file to db: {games_csv_file}")    
-    pgn_obj.pgn_fen_to_sqlite(db = db)
+    pgn_obj.pgn_fen_to_sqlite()
     # del pgn_obj
     # cowsay.cow(f"Generating feature data from pgn boards in csv: {scores_file}")
     # gam_an_obj = cnn_game_analyzer(scores_file=scores_file)
