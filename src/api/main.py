@@ -7,7 +7,7 @@ import json
 import chess
 
 
-from Chess_Model.src.model.classes.potential_board_populator import populator
+from Chess_Model.src.model.classes.pretorch_files.potential_board_populator import populator
 from  Chess_Model.src.model.classes.game_analyzer import game_analyzer
 import chess
 from Chess_Model.src.model.classes.pgn_processor import pgn_processor

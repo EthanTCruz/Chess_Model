@@ -94,18 +94,20 @@ def main():
 
 
 
-
-
-
-def test_pt_model():
+def initialize_collections():
     mdp.open_connections()
     
     #main collection is removed from this function
     mdp.delete_collection_documents()
     mdp.initialize_data()
     mdp.close_connections()
+
+
+def test_pt_model():
+    # initialize_collections()
     model = model_operator()
-    model.Create_and_Train_Model(num_workers = 0,num_epochs=16)
+    model.Create_and_Train_Model(num_workers = 0,num_epochs=1)
+    # model.load_and_evaluate_model(model_path=s.torch_model_file)
 
 def test_data_generator():
     dg = record_generator(filename=scores_file,target_feature=target_features,

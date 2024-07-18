@@ -1,8 +1,8 @@
 from Chess_Model.src.model.classes.pgn_processor import pgn_processor
 
-from Chess_Model.src.model.classes.game_analyzer import game_analyzer
+from Chess_Model.src.model.classes.pretorch_files.game_analyzer import game_analyzer
 
-from Chess_Model.src.model.classes.potential_board_populator import populator
+from Chess_Model.src.model.classes.pretorch_files.potential_board_populator import populator
 
 import os
 import chess

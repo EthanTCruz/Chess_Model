@@ -6,6 +6,11 @@ from Chess_Model.src.model.classes.MongoDBDataset import MongoDBDataset
 from Chess_Model.src.model.config.config import Settings
 from tqdm import tqdm
 import torch.optim as optim
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
+from Chess_Model.src.model.classes.cnn_bb_scorer import  calc_shapes
 
 class FullModel(nn.Module):
     def __init__(self, input_planes, additional_features, output_classes=3):
@@ -110,6 +115,7 @@ class model_operator():
                         num_workers=num_workers)
             return train_dataloader, test_dataloader, valid_dataloader
     
+
     def Create_and_Train_Model(self, 
                                learning_rate: float = 0.001, 
                                num_epochs: int = 16, 
@@ -118,7 +124,8 @@ class model_operator():
             num_workers = self.num_workers
         
         train_dataloader, test_dataloader, valid_dataloader = self.create_dataloaders(num_workers=num_workers)
-        shapes = self.calc_shapes(dataloader=train_dataloader)
+        shapes = calc_shapes(batch_size=self.batch_size)
+
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = FullModel(shapes[0][1], shapes[1][2]).to(device)
 
@@ -147,17 +154,57 @@ class model_operator():
             avg_train_loss = running_loss / len(train_dataloader)
             train_accuracy = correct_samples / total_samples * 100
             
-            
-            avg_val_loss, val_accuracy = self.evaluate(model, valid_dataloader, criterion, device)
-
+            avg_val_loss, val_accuracy, val_predictions, val_labels = self.evaluate(model, valid_dataloader, criterion, device)
             print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.2f}%, Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.2f}%")
 
-        test_loss, test_accuracy = self.evaluate(model, test_dataloader, criterion, device)
+        test_loss, test_accuracy, test_predictions, test_labels = self.evaluate(model, test_dataloader, criterion, device)
         print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.2f}%")
 
-        self.save_model(model=model, optimizer=optimizer, model_path=self.model_path)
+        # self.save_model(model=model, optimizer=optimizer, model_path=self.model_path)
+        # Generate confusion matrix
+        cm = confusion_matrix(test_labels.cpu(), test_predictions.cpu())
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        disp.plot()
+        plt.show()
+
+        
 
         return model
+
+    def load_and_evaluate_model(self, model_path, num_workers: int = 0):
+        if num_workers < self.num_workers:
+            num_workers = self.num_workers
+
+        _, test_dataloader, _ = self.create_dataloaders(num_workers=num_workers)
+        shapes =  calc_shapes(batch_size=self.batch_size)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = FullModel(shapes[0][1], shapes[1][2]).to(device)
+        optimizer = optim.Adam(model.parameters())
+
+        checkpoint = torch.load(model_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        
+        criterion = nn.CrossEntropyLoss()
+        test_loss, test_accuracy, test_predictions, test_labels = self.evaluate(model, test_dataloader, criterion, device)
+        print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.2f}%")
+
+        # Generate confusion matrix
+        cm = confusion_matrix(test_labels.cpu(), test_predictions.cpu())
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        disp.plot()
+        plt.show()
+
+            # Calculate precision, recall, and F1 score
+        precision = precision_score(test_labels.cpu(), test_predictions.cpu(), average=None)
+        recall = recall_score(test_labels.cpu(), test_predictions.cpu(), average=None)
+        f1 = f1_score(test_labels.cpu(), test_predictions.cpu(), average=None)
+
+        for i in range(len(precision)):
+            print(f"Class {i}:")
+            print(f"  Precision: {precision[i]:.4f}")
+            print(f"  Recall: {recall[i]:.4f}")
+            print(f"  F1-Score: {f1[i]:.4f}")
 
     def save_model(self, model, optimizer, model_path):
         torch.save({
@@ -166,11 +213,25 @@ class model_operator():
         }, model_path)
         print(f"Model saved to {model_path}")
 
+
+    def load_model(self, model_path):
+        shapes = calc_shapes(batch_size=self.batch_size)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = FullModel(shapes[0][1], shapes[1][2]).to(device)
+        self.optimizer = optim.Adam(self.model.parameters())
+
+        checkpoint = torch.load(model_path)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        print(f"Model loaded from {model_path}")
+
     def evaluate(self, model, data_loader, criterion, device):
         model.eval()
         running_loss = 0.0
         total_samples = 0
         correct_samples = 0
+        all_predictions = []
+        all_labels = []
         with torch.no_grad():
             for batch_x1, batch_x2, batch_labels in data_loader:
                 batch_x1, batch_x2, batch_labels = batch_x1.to(device), batch_x2.to(device), batch_labels.to(device)
@@ -179,10 +240,19 @@ class model_operator():
                 running_loss += loss.item()
                 total_samples += batch_x1.size(0)
                 correct_samples += self.calculate_accuracy(outputs, batch_labels)
+                
+                _, predicted = torch.max(outputs, 1)
+                _, labels = torch.max(batch_labels, 1)
+                all_predictions.append(predicted)
+                all_labels.append(labels)
         
         avg_loss = running_loss / len(data_loader)
         accuracy = correct_samples / total_samples * 100
-        return avg_loss, accuracy
+        
+        all_predictions = torch.cat(all_predictions)
+        all_labels = torch.cat(all_labels)
+        
+        return avg_loss, accuracy, all_predictions, all_labels
 
     def calculate_accuracy(self, outputs, labels):
         _, predicted = torch.max(outputs, 1)
@@ -190,10 +260,10 @@ class model_operator():
         correct = (predicted == labels).sum().item()
         return correct
 
-    def calc_shapes(self,dataloader):
+    # def calc_shapes(self,dataloader):
 
-        for batch in dataloader:
-            batch_x1, batch_x2, batch_labels = batch
+    #     for batch in dataloader:
+    #         batch_x1, batch_x2, batch_labels = batch
 
-            return batch_x1.shape, batch_x2.shape, batch_labels.shape
+    #         return batch_x1.shape, batch_x2.shape, batch_labels.shape
 
