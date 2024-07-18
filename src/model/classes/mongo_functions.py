@@ -336,7 +336,7 @@ class mongo_data_pipe():
         return(document)
     
     def delete_collection_documents(self):
-        # self.main_collection.delete_many({})
+        self.main_collection.delete_many({})
         self.valid_collection.delete_many({})
         self.test_collection.delete_many({})
         self.train_collection.delete_many({})

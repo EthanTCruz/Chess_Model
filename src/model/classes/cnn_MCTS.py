@@ -3,7 +3,7 @@ from math import log, sqrt, inf
 import random
 import time
 import sys
-from Chess_Model.src.model.classes.potential_board_populator import populator
+from Chess_Model.src.model.classes.pretorch_files.potential_board_populator import populator
 from Chess_Model.src.model.config.config import Settings
 sys.setrecursionlimit(10000)
 
