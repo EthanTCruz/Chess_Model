@@ -24,7 +24,7 @@ from Chess_Model.src.model.classes.endgame import endgamePicker
 
 from Chess_Model.src.model.classes.mongo_functions import mongo_data_pipe
 from Chess_Model.src.model.classes.torch_model import model_operator
-
+from Chess_Model.src.model.classes.torch_movepicker import move_picker
 
 s = Settings()
 ModelFilePath=s.ModelFilePath
@@ -66,7 +66,7 @@ nn_kwargs["batch_size"]=batch_size
 
 mdp = mongo_data_pipe()
 
-
+mp = move_picker()
 
 def main():
     #test()
@@ -85,6 +85,8 @@ def main():
     
     # pgn_to_db()
     # test_data_generator()
+    board = chess.Board()
+    use_model(board=board)
     test_pt_model()
     # train_and_test_model()
     #highest_scoring_move()
@@ -102,6 +104,9 @@ def initialize_collections():
     mdp.initialize_data()
     mdp.close_connections()
 
+
+def eval_board(board: chess.Board):
+    return mp.use_model(board=board)
 
 def test_pt_model():
     # initialize_collections()
@@ -188,7 +193,7 @@ def use_model_new(board: chess.Board = chess.Board()):
 
 def use_model(board: chess.Board = chess.Board()):
 
-    move = mp.use_model_cnn(board=board)
+    move = mp.use_model(board=board)
 
     return move
 

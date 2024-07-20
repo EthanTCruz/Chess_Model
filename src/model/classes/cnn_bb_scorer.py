@@ -9,7 +9,7 @@ from Chess_Model.src.model.classes.metadata_scorer import metaDataBoardEval
 
 
 class boardCnnEval:
-    def __init__(self,fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',board: chess.Board = None):
+    def __init__(self,fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',board: chess.Board = chess.Board()):
         self.half_move_amount = Settings().halfMoveBin
         self.setup_parameters(fen=fen,board=board)
         
@@ -31,7 +31,15 @@ class boardCnnEval:
             self.board = board
             self.fen = board.fen()
         self.fen_components = fen.split(" ") 
+        self.game = board_to_GamePostition(board=board)
         return 0
+
+    def setup_parameters_board(self,board: chess.Board = None):
+        if board is not None:
+
+            self.game = board_to_GamePostition(board=board)
+            self.setup_parameters_gamepositions(game=self.game)
+            return 1
 
 
     def setup_parameters_gamepositions(self,game: GamePositions):
@@ -158,6 +166,7 @@ class boardCnnEval:
         dict_results["game_results"] = self.get_game_results()
 
         return dict_results   
+    
     
     def get_board_scores_applied(self):
         dict_results = {}
