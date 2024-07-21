@@ -1,50 +1,18 @@
 import chess.pgn
-import csv
-from Chess_Model.src.model.classes.sqlite.dependencies import insert_bulk_boards_into_db
-from Chess_Model.src.model.classes.sqlite.models import GamePositions
 from tqdm import tqdm
-from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 from sqlalchemy.orm import  Session
 import os
 
+from Chess_Model.src.model.classes.sqlite.database import SessionLocal
+from Chess_Model.src.model.classes.sqlite.dependencies import insert_bulk_boards_into_db
+
+
 class pgn_processor():
-    def __init__(self,pgn_file,csv_file) -> None:
+    def __init__(self,pgn_file) -> None:
         self.pgn_file = pgn_file
-        self.csv_file = csv_file
+
     
 
-    def pgn_fen_to_csv(self,victor="NA"):
-        pgn = open(self.pgn_file)
-        
-        with open(self.csv_file, 'a', newline='') as csvfile:
-                    writer = csv.writer(csvfile)
-                    while True:
-                        game = chess.pgn.read_game(pgn)
-                        if game is None:
-                            break  # end of file
-                        board = game.board()
-                        victor = 's'
-                        if game.headers["Result"] == '1-0':
-                            victor = 'w'
-                        elif game.headers["Result"] == '0-1':
-                            victor = 'b'
-                        if victor != 's':
-                            move_list = []
-                            for move in game.mainline_moves():
-                                move_list.append(move)
-                                board.push(move=move)
-                                row = ''
-                                #only want to proccess winning player moves
-                                if victor != 'NA':
-                                    if victor == 'w' and not board.turn:
-                                        row = [str([move.uci() for move in board.move_stack]),board.fen(),victor]
-                                        writer.writerow(row)
-                                    elif victor =='b' and  board.turn:
-                                        row = [str([move.uci() for move in board.move_stack]),board.fen(),victor]
-                                        writer.writerow(row)
-                                else:
-                                    row = [str([move.uci() for move in board.move_stack]),board.fen(),victor]
-                                    writer.writerow(row)   
 
     def pgn_fen_to_sqlite(self,db: Session = SessionLocal()):
         for filename in os.listdir(self.pgn_file):
@@ -56,6 +24,8 @@ class pgn_processor():
 
                     if game is None:
                         break  # end of file
+                    if game.headers["Result"] == '*':
+                        continue  # skip unfinished games
                     board = game.board()
                     board_victors = []
                     victor = 'NA'
@@ -65,6 +35,10 @@ class pgn_processor():
                         victor = 'b'
                     elif game.headers["Result"] == '1/2-1/2':
                         victor = 's'
+                    else:
+                        print(game.headers["Result"])
+                        raise Exception("No winner")
+                    
 
                     for move in game.mainline_moves():
                         board.push(move=move)

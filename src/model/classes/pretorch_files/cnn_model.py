@@ -13,7 +13,7 @@ def configure_gpu_memory_growth():
 
 configure_gpu_memory_growth()
 
-from Chess_Model.src.model.classes.cnn_game_analyzer import game_analyzer
+from Chess_Model.src.model.classes.pretorch_files.cnn_game_analyzer import game_analyzer
 import numpy as np
 import chess
 from Chess_Model.src.model.config.config import Settings
