@@ -142,6 +142,7 @@ class model_operator():
             progress_bar = tqdm(train_dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
             for batch_x1, batch_x2, batch_labels in progress_bar:
                 batch_x1, batch_x2, batch_labels = batch_x1.to(device), batch_x2.to(device), batch_labels.to(device)
+                # b1 = [1024,13,8,8]
                 optimizer.zero_grad()
                 outputs = model(batch_x1, batch_x2)
                 loss = criterion(outputs, batch_labels)
@@ -250,8 +251,10 @@ class model_operator():
             output = self.model(bitboards, metadata)
             prediction = torch.argmax(output, dim=1)  # Get the index of the class with the highest probability
 
-        return prediction.item()
 
+        return prediction.item()
+        
+    
     def evaluate(self, model, data_loader, criterion, device):
         model.eval()
         running_loss = 0.0
