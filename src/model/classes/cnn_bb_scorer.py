@@ -6,12 +6,11 @@ from Chess_Model.src.model.classes.sqlite.dependencies import board_to_GamePosti
 from Chess_Model.src.model.classes.sqlite.models import GamePositions
 from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.metadata_scorer import metaDataBoardEval
-
-
+import torch
 class boardCnnEval:
     def __init__(self,fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',board: chess.Board = chess.Board()):
         self.half_move_amount = Settings().halfMoveBin
-        self.setup_parameters(fen=fen,board=board)
+
         
         self.ep = endgamePicker()
         
@@ -23,20 +22,9 @@ class boardCnnEval:
         self.all_pieces = self.white_pieces + self.black_pieces
 
 
-    def setup_parameters(self,fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',board: chess.Board = None):
-        self.fen = fen
-
-        self.board = chess.Board(fen=fen)
-        if board is not None:
-            self.board = board
-            self.fen = board.fen()
-        self.fen_components = fen.split(" ") 
-        self.game = board_to_GamePostition(board=board)
-        return 0
 
     def setup_parameters_board(self,board: chess.Board = None):
         if board is not None:
-
             self.game = board_to_GamePostition(board=board)
             self.setup_parameters_gamepositions(game=self.game)
             return 1
@@ -136,49 +124,48 @@ class boardCnnEval:
 
     
     
-    def get_board_scores(self):
+    def get_board_scores(self,board: chess.Board):
+        self.setup_parameters_board(board = board)
         dict_results = {}
 
         dict_results["metadata"] = list(self.get_metadata().values())
-
-
-
         dict_results["positions_data"] = board_to_bitboards(self.board)
+        dict_results["game_results"] = list(self.get_game_results().values())
 
+        return dict_results    
+    
+    def get_game_scores(self,game):
+        self.setup_parameters_gamepositions(game=game)
+        dict_results = {}
 
-        
+        dict_results["metadata"] = list(self.get_metadata().values())
+        dict_results["positions_data"] = board_to_bitboards(self.board)
         dict_results["game_results"] = list(self.get_game_results().values())
 
         return dict_results    
     
 
-    def get_board_scores_with_labels(self):
+    def get_board_scores_with_labels(self,board: chess.Board):
+        self.setup_parameters_board(board = board)
         dict_results = {}
 
         dict_results["metadata"] = self.get_metadata()
-
-
-
-        dict_results["positions_data"] = board_to_bitboards(self.board)
-
-
-        
+        dict_results["positions_data"] = board_to_bitboards(self.board)   
         dict_results["game_results"] = self.get_game_results()
 
         return dict_results   
     
     
-    def get_board_scores_applied(self):
-        dict_results = {}
-
-        dict_results["metadata"] = list(self.get_metadata().values())
+    def get_board_scores_applied(self,board: chess.Board):
+        self.setup_parameters_board(board = board)
 
 
+        metadata = list(self.get_metadata().values())
+        positions_data = board_to_numpy_arrays(self.board)
 
-        dict_results["positions_data"] = board_to_numpy_arrays(self.board)
-
-
-        return dict_results   
+        return (torch.tensor(positions_data, dtype=torch.float32),
+                torch.tensor(metadata, dtype=torch.float32))
+  
 
 
 def board_to_bitboards(board):
@@ -200,7 +187,7 @@ def board_to_bitboards(board):
 def board_to_numpy_arrays(board):
 
     piece_types = [chess.PAWN, chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN, chess.KING]
-    numpy_arrays = np.zeros((12, 8, 8), dtype=int)
+    numpy_arrays = np.zeros((13, 8, 8), dtype=int)
 
     for color in (chess.WHITE, chess.BLACK):
         offset = 0 if color == chess.WHITE else 6
@@ -210,7 +197,14 @@ def board_to_numpy_arrays(board):
                 if piece and piece.piece_type == piece_type and piece.color == color:
                     row, col = divmod(square, 8)
                     numpy_arrays[offset + piece_index, row, col] = 1
-
+    
+    ep_board = en_passant_np_array(board=board)
+    numpy_arrays[12,:,:] = ep_board
+    # numpy_arrays.reshape(8,8,13)
+    print(ep_board.shape)
+    # print(numpy_arrays.shape)
+    # numpy_arrays = np.append([numpy_arrays],[ep_board])
+    print(numpy_arrays.shape)
     return numpy_arrays
 
 
@@ -226,12 +220,24 @@ def en_passant_bitboard(board):
     
     return bitboard
 
+def en_passant_np_array(board):
+    en_passant_square = board.ep_square
+
+    # Initialize an 8x8 numpy array of zeros
+    bitboard_array = np.zeros((8, 8), dtype=np.uint8)
+
+    if en_passant_square is not None:
+        # Convert the square index to 2D board coordinates
+        row = en_passant_square // 8
+        col = en_passant_square % 8
+        bitboard_array[row, col] = 1
+
+    return bitboard_array
+
 def calc_shapes(batch_size: int = 1024):
     board = chess.Board()
-    game = board_to_GamePostition(board=board)
     evaluator = boardCnnEval()        
-    evaluator.setup_parameters_gamepositions(game=game)
-    data = evaluator.get_board_scores()
+    data = evaluator.get_board_scores(board=board)
     md_shape = (batch_size,1,len(data['metadata']))
     bb_shape = (batch_size,len(data['positions_data']),8,8)
     gr_shape = (batch_size,len(data['game_results']))

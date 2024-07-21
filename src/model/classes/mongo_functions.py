@@ -6,6 +6,7 @@ import json
 from tqdm import tqdm
 import time
 
+
 from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 from Chess_Model.src.model.classes.cnn_bb_scorer import boardCnnEval
@@ -202,43 +203,27 @@ class mongo_data_pipe():
                 requests = [InsertOne(doc) for doc in collected_docs[key]]
                 collection_client.bulk_write(requests)
             
-    def initialize_data(self):
-        # self.process_sqlite_boards_to_mongo()
-        # start_time_bulk = time.time()
-        # self.shuffle_and_split_set_bulk()
-        # end_time_bulk = time.time()
-        # duration_bulk = end_time_bulk - start_time_bulk
-        # print(f"shuffle_and_split_set_bulk duration: {duration_bulk:.4f} seconds")
-        
-        self.valid_collection.delete_many({})
-        self.test_collection.delete_many({})
-        self.train_collection.delete_many({})
+    def initialize_data(self,batch_size: int = 512):
+        self.delete_all_collection_documents()
+        self.process_sqlite_boards_to_mongo(batch_size=batch_size)
 
-        # Measure time for shuffle_and_split_set
-        # start_time = time.time()
+        
+
+
         self.shuffle_and_split_set()
-        # end_time = time.time()
-        # duration = end_time - start_time
-        # print(f"shuffle_and_split_set duration: {duration:.4f} seconds")
+
         train_mean, train_std = self.calc_mongo_train()
         
         np.save(self.np_means_file,train_mean)
         np.save(self.np_stds_file,train_std)
 
         return train_mean, train_std
-
-
-    def check_collection_sizes(self):
-        collection_stats = self.db.command("collstats", self.testing_collection_key)
-        print(f"Document Count: {collection_stats['count']}")
-        collection_stats = self.db.command("collstats", self.validation_collection_key)
-        print(f"Document Count: {collection_stats['count']}")
-        collection_stats = self.db.command("collstats", self.training_collection_key)
-        print(f"Document Count: {collection_stats['count']}")
-
-
     
-    
+    def delete_non_main_collections(self):
+        self.valid_collection.delete_many({})
+        self.test_collection.delete_many({})
+        self.train_collection.delete_many({})
+   
 
     def calc_mongo_train(self):
         collection_stats = self.db.command("collstats", self.training_collection_key)
@@ -297,6 +282,15 @@ class mongo_data_pipe():
         return std
 
 
+
+
+
+
+
+
+
+
+
     def process_sqlite_boards_to_mongo(self,batch_size: int = 512):
         with SessionLocal() as db:
             row_count = get_rollup_row_count(db=db)
@@ -325,8 +319,8 @@ class mongo_data_pipe():
                     raise Exception(e)
                 
     def game_to_doc_evaluation(self,game):
-        self.evaluator.setup_parameters_gamepositions(game=game)
-        board_scores = self.evaluator.get_board_scores()
+
+        board_scores = self.evaluator.get_game_scores(game=game)
 
         document = {
             "metadata": board_scores['metadata'],  # Ensure this does not contain large integers
@@ -335,7 +329,16 @@ class mongo_data_pipe():
         }
         return(document)
     
-    def delete_collection_documents(self):
+
+    def check_collection_sizes(self):
+        collection_stats = self.db.command("collstats", self.testing_collection_key)
+        print(f"Document Count: {collection_stats['count']}")
+        collection_stats = self.db.command("collstats", self.validation_collection_key)
+        print(f"Document Count: {collection_stats['count']}")
+        collection_stats = self.db.command("collstats", self.training_collection_key)
+        print(f"Document Count: {collection_stats['count']}")
+
+    def delete_all_collection_documents(self):
         self.main_collection.delete_many({})
         self.valid_collection.delete_many({})
         self.test_collection.delete_many({})
@@ -361,6 +364,7 @@ def mean_aggregate(curr_md_list, curr_mean):
 
 def bitboard_to_matrix(bitboard):
     return np.array([(bitboard >> shift) & 1 for shift in range(64)]).reshape(8, 8)
+
 def create_cnn_input(bitboards):
     layers = []
     for bb in bitboards:  # Ensure consistent order

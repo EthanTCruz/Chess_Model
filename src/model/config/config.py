@@ -45,12 +45,7 @@ class Settings(BaseSettings):
     player: str = 'w'
     endgame_table: str = f"{srcModelDirectory}/data/EndgameTbl/"
     minimumEndgamePieces: int = 5
-    trainModel: bool = False
-    selfTrain: bool = False
-    trainDataExists: bool = True
-    useSamplePgn: bool = False
-    saveToBucket: bool = False
-    tuneParameters: bool = False
+
 
     #MCST parameters:
     UCB_Constant: float = 0.1
@@ -90,6 +85,13 @@ class Settings(BaseSettings):
     num_workers: int = 0
 
     halfMoveBin: int = 25
+
+    trainModel: bool = False
+    selfTrain: bool = False
+    trainDataExists: bool = True
+    useSamplePgn: bool = False
+    saveToBucket: bool = False
+    tuneParameters: bool = False
     
     class Config:
         env_prefix = ''

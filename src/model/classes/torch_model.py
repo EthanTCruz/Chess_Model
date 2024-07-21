@@ -119,7 +119,8 @@ class model_operator():
     def Create_and_Train_Model(self, 
                                learning_rate: float = 0.001, 
                                num_epochs: int = 16, 
-                               num_workers: int = 0):
+                               num_workers: int = 0,
+                               save_model: bool = True):
         if num_workers < self.num_workers:
             num_workers = self.num_workers
         
@@ -159,8 +160,9 @@ class model_operator():
 
         test_loss, test_accuracy, test_predictions, test_labels = self.evaluate(model, test_dataloader, criterion, device)
         print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.2f}%")
-
-        # self.save_model(model=model, optimizer=optimizer, model_path=self.model_path)
+        
+        if save_model:
+            self.save_model(model=model, optimizer=optimizer, model_path=self.model_path)
         # Generate confusion matrix
         cm = confusion_matrix(test_labels.cpu(), test_predictions.cpu())
         disp = ConfusionMatrixDisplay(confusion_matrix=cm)
@@ -224,6 +226,31 @@ class model_operator():
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         print(f"Model loaded from {model_path}")
+
+    def predict_single_example(self,bitboards, metadata):
+        """
+        Uses the loaded model to make a prediction on a single example.
+
+        Arguments:
+        model -- The loaded PyTorch model.
+        bitboard_example -- The bitboard input, a single example as a tensor of shape (1, n_C, H, W).
+        metadata_example -- The metadata input, a single example as a tensor of shape (1, n_features).
+
+        Returns:
+        prediction -- The model's predicted class for the input example.
+        """
+        self.model.eval()  # Set the model to evaluation mode
+
+        # Ensure the example tensors are on the same device as the model
+        device = next(self.model.parameters()).device
+        bitboards = bitboards.to(device)
+        metadata = metadata.to(device)
+
+        with torch.no_grad():  # No need to compute gradients
+            output = self.model(bitboards, metadata)
+            prediction = torch.argmax(output, dim=1)  # Get the index of the class with the highest probability
+
+        return prediction.item()
 
     def evaluate(self, model, data_loader, criterion, device):
         model.eval()
