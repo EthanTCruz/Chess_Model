@@ -162,9 +162,11 @@ class boardCnnEval:
 
         metadata = list(self.get_metadata().values())
         positions_data = board_to_numpy_arrays(self.board)
+        
 
-        return (torch.tensor(positions_data, dtype=torch.float32),
-                torch.tensor(metadata, dtype=torch.float32))
+        # return (torch.tensor(positions_data, dtype=torch.float32),
+        #         torch.tensor(metadata, dtype=torch.float32))
+        return positions_data,metadata
   
 
 

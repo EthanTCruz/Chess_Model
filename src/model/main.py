@@ -58,7 +58,7 @@ nn_kwargs["batch_size"]=batch_size
 
 mdp = mongo_data_pipe()
 
-mp = move_picker()
+
 
 def main():
 
@@ -90,7 +90,7 @@ def verify_functionality_on_sample_dataset():
 
 
 def use_model(board: chess.Board = chess.Board()):
-
+    mp = move_picker()
     move = mp.use_model(board=board)
 
     return move
@@ -128,15 +128,6 @@ def test_endgame(board:chess.Board):
     results = ep.find_endgame_best_move(board=board)
     print(results)
     return results
-
-
-
-
-def test_process_fen():
-    board = get_sample_board()
-    gam_an_obj = cnn_game_analyzer(scores_file=scores_file)
-    info =  gam_an_obj.process_single_board(board=board)
-    return info
 
 
 
