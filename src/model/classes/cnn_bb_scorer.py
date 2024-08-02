@@ -202,11 +202,7 @@ def board_to_numpy_arrays(board):
     
     ep_board = en_passant_np_array(board=board)
     numpy_arrays[12,:,:] = ep_board
-    # numpy_arrays.reshape(8,8,13)
-    print(ep_board.shape)
-    # print(numpy_arrays.shape)
-    # numpy_arrays = np.append([numpy_arrays],[ep_board])
-    print(numpy_arrays.shape)
+
     return numpy_arrays
 
 

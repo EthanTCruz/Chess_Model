@@ -10,7 +10,7 @@ import time
 from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 from Chess_Model.src.model.classes.cnn_bb_scorer import boardCnnEval
-from Chess_Model.src.model.classes.sqlite.dependencies import   fetch_all_game_positions_rollup,get_rollup_row_count
+from Chess_Model.src.model.classes.sqlite.dependencies import   fetch_all_game_positions_rollup,get_rollup_row_count,create_rollup_table
 
 class mongo_data_pipe():
     def __init__(self,**kwargs) -> None:
@@ -293,6 +293,7 @@ class mongo_data_pipe():
 
     def process_sqlite_boards_to_mongo(self,batch_size: int = 512):
         with SessionLocal() as db:
+            create_rollup_table(batch_size=batch_size,db=SessionLocal())
             row_count = get_rollup_row_count(db=db)
             batch = fetch_all_game_positions_rollup(yield_size=512, db=db)
             dataset = []  # List to accumulate serialized examples
