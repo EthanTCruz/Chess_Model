@@ -8,7 +8,7 @@ from  Chess_Model.src.model.classes.cnn_bb_scorer import boardCnnEval
 from Chess_Model.src.model.classes.torch_model import model_operator
 from Chess_Model.src.model.classes.mongo_functions import create_cnn_input
 
-class move_picker():
+class board_analyzer():
 
     def __init__(self,**kwargs) -> None:
         self.set_parameters(kwargs=kwargs)
@@ -47,6 +47,7 @@ class move_picker():
         bb_o = create_cnn_input(bb)
         score = self.mdp.predict_single_example(bitboards=bitboards,metadata=metadata)
 
+        # white = 0, black = 1, stalemate = 2
         return score
 
         

@@ -4,11 +4,14 @@ import csv
 import cowsay
 import chess
 import time
-
+from math import log,sqrt,e,inf
+import random
+import numpy as np
+import torch
 sys.path.append('./')
 from sqlalchemy.orm import  Session
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
-from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions
+from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions,delete_all_rollup_game_positions,create_rollup_table
 from Chess_Model.src.model.classes.pgn_processor import pgn_processor
 
 from Chess_Model.src.model.config.config import Settings
@@ -16,7 +19,8 @@ from Chess_Model.src.model.config.config import Settings
 from Chess_Model.src.model.classes.endgame import endgamePicker
 from Chess_Model.src.model.classes.mongo_functions import mongo_data_pipe
 from Chess_Model.src.model.classes.torch_model import model_operator
-from Chess_Model.src.model.classes.torch_movepicker import move_picker
+from Chess_Model.src.model.classes.board_analyzer import board_analyzer
+from Chess_Model.src.model.classes.move_picker import move_picker
 
 s = Settings()
 ModelFilePath=s.ModelFilePath
@@ -58,6 +62,10 @@ nn_kwargs["batch_size"]=batch_size
 
 mdp = mongo_data_pipe()
 
+ba = board_analyzer()
+
+mp = move_picker()
+
 
 
 def main():
@@ -70,12 +78,85 @@ def main():
     # initialize_collections()
     # cowsay.cow(f"testing model functions")    
     # test_pt_model()
+
+
     board = chess.Board()
     eval = use_model(board=board)
     print(eval)
+    #b
+    board.push_san('e4')
+    #w
+    eval = use_model(board=board)
+    print(eval)
+    board.push_san('e5')
+    #b
+    eval = use_model(board=board)
+    print(eval)
+    board.push_san('Nf3')
+    #w
+    eval = use_model(board=board)
+    print(eval)
+
+    board.push_san('Bc5')
+    #w
+    eval = use_model(board=board)
+    print(eval)
+    set_seeds(10)
+    # evaluate_mcts_plateau(board=board)
+
 
 
     return 0
+
+def create_rollup_table():
+    delete_all_rollup_game_positions()
+    create_rollup_table(yield_size=500,db=SessionLocal())
+
+
+def set_seeds(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed=seed)
+
+
+def evaluate_mcts_plateau(board: chess.Board):
+    set_seeds(10)
+    iteration_amts = [64, 128, 258, 512, 1012, 2048, 4096, 8192]
+    ucb_constants = [0.1,0.5,1,sqrt(2), 2]
+    scorings = [
+        [1.5, -1, 5, 0],
+        [1, -1, 0.5],
+        [1, -1, 0]
+    ]
+    moves = []
+    # Open the CSV file for writing
+    if os.path.exists(s.evalModeFile):
+        os.remove(s.evalModeFile)
+    
+    with open(s.evalModeFile, 'w', newline='') as csvfile:
+
+        csv_writer = csv.writer(csvfile)
+        # Write the header row
+        csv_writer.writerow(['Iteration', 'UCB Constant', 'Scoring', 'Move'])
+
+        for scores in scorings:
+            for u in ucb_constants:
+                for i in iteration_amts:
+
+                    move = mp.get_best_move(board=board.copy(), 
+                                            iterations=i,
+                                            ucb_constant=u,
+                                            scores=scores)
+                    moves.append(move)
+                    # Write the data to the CSV file
+                    csv_writer.writerow([i, u, scores, move])
+                    print(f"iter: {i}, ucb: {u}, scores: {scores}, move: {move}")
+    
+    print(moves)
+    print(board)
+
 
 def verify_functionality_on_sample_dataset():
     cowsay.cow(f"Converting pgn file to sqlite db")    
@@ -90,9 +171,9 @@ def verify_functionality_on_sample_dataset():
 
 
 def use_model(board: chess.Board = chess.Board()):
-    mp = move_picker()
-    move = mp.use_model(board=board)
-
+    
+    move = ba.use_model(board=board)
+    # white = 0, black = 1, stalemate = 2
     return move
 
 def initialize_collections():
@@ -103,7 +184,7 @@ def initialize_collections():
 
 
 def eval_board(board: chess.Board):
-    return mp.use_model(board=board)
+    return ba.use_model(board=board)
 
 def test_pt_model():
     # initialize_collections()
@@ -161,6 +242,7 @@ def create_csv():
 
 
 if __name__ == "__main__":
+    set_seeds(10)
     main()
 
 

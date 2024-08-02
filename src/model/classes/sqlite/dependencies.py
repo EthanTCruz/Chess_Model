@@ -1,6 +1,6 @@
 
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
-from Chess_Model.src.model.classes.sqlite.models import GamePositions
+from Chess_Model.src.model.classes.sqlite.models import GamePositions,GamePositionRollup
 from Chess_Model.src.model.config.config import Settings
 from sqlalchemy.orm import Session
 from typing import List, Tuple
@@ -28,6 +28,21 @@ def delete_all_game_positions(db: Session = next(get_db())):
         db.commit()
 
         print("All records in GamePositions have been deleted.")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        db.rollback()
+
+def delete_all_rollup_game_positions(db: Session = next(get_db())):
+    try:
+
+        # Delete all records in the GamePositions table
+        db.query(GamePositionRollup).delete()
+
+        # Commit the changes to the database
+        db.commit()
+
+        print("All records in RollupGamePositions have been deleted.")
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -144,7 +159,7 @@ class GamePositionWithWinBuckets:
         self.total_wins = white_wins + black_wins + stalemates
         self.win_buckets = [white_wins/self.total_wins,black_wins/self.total_wins,stalemates/self.total_wins]
 
-def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get_db())):
+def create_rollup_table(yield_size: int = 200,db: Session = next(get_db())):
     try:
         # Constructing the query with group by and sum
         query = db.query(
@@ -168,6 +183,48 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
         gen = query.yield_per(yield_size)
 
         for result in gen:
+            game = GamePositionRollup(
+                piece_positions=result.piece_positions,
+                castling_rights=result.castling_rights,
+                en_passant=result.en_passant,
+                turn=result.turn,
+                greater_than_n_half_moves=result.greater_than_n_half_moves,
+                white_wins=result.white_wins,
+                black_wins=result.black_wins,
+                stalemates=result.stalemates
+            )
+            db.add(game)
+        db.commit()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
+
+
+def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get_db())):
+    try:
+        # Constructing the query with group by and sum
+        query = db.query(
+            GamePositionRollup.piece_positions, 
+            GamePositionRollup.castling_rights, 
+            GamePositionRollup.en_passant, 
+            GamePositionRollup.turn, 
+            GamePositionRollup.greater_than_n_half_moves, 
+            GamePositionRollup.white_wins.label('white_wins'),
+            GamePositionRollup.black_wins.label('black_wins'),
+            GamePositionRollup.stalemates.label('stalemates'),
+
+        ).group_by(
+            GamePositionRollup.piece_positions, 
+            GamePositionRollup.castling_rights, 
+            GamePositionRollup.en_passant, 
+            GamePositionRollup.turn, 
+            GamePositionRollup.greater_than_n_half_moves
+        )
+
+        gen = query.yield_per(yield_size)
+
+        for result in gen:
             game = GamePositionWithWinBuckets(
                 piece_positions=result.piece_positions,
                 castling_rights=result.castling_rights,
@@ -178,6 +235,7 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
                 black_wins=result.black_wins,
                 stalemates=result.stalemates
             )
+
             yield game
 
     except GeneratorExit:
@@ -187,6 +245,7 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
     finally:
         db.close()
         yield None
+
 
 def calculate_win_buckets(white_wins, black_wins, stalemates):
     total_wins = white_wins + black_wins + stalemates
@@ -213,21 +272,21 @@ def get_rollup_row_count(db: Session = next(get_db())):
     try:
         # Counting the rows in the GamePositions table
         count = db.query(
-            GamePositions.piece_positions, 
-            GamePositions.castling_rights, 
-            GamePositions.en_passant, 
-            GamePositions.turn, 
-            GamePositions.greater_than_n_half_moves, 
-            func.sum(GamePositions.white_wins).label('white_wins'),
-            func.sum(GamePositions.black_wins).label('black_wins'),
-            func.sum(GamePositions.stalemates).label('stalemates'),
+            GamePositionRollup.piece_positions, 
+            GamePositionRollup.castling_rights, 
+            GamePositionRollup.en_passant, 
+            GamePositionRollup.turn, 
+            GamePositionRollup.greater_than_n_half_moves, 
+            GamePositionRollup.white_wins.label('white_wins'),
+            GamePositionRollup.black_wins.label('black_wins'),
+            GamePositionRollup.stalemates.label('stalemates'),
 
         ).group_by(
-            GamePositions.piece_positions, 
-            GamePositions.castling_rights, 
-            GamePositions.en_passant, 
-            GamePositions.turn, 
-            GamePositions.greater_than_n_half_moves
+            GamePositionRollup.piece_positions, 
+            GamePositionRollup.castling_rights, 
+            GamePositionRollup.en_passant, 
+            GamePositionRollup.turn, 
+            GamePositionRollup.greater_than_n_half_moves
         ).count()
         return count
     

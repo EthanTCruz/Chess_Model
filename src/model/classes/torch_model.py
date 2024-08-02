@@ -173,6 +173,41 @@ class model_operator():
         
 
         return model
+    
+    def evaluate_with_indices(self, model, data_loader, criterion, device):
+        model.eval()
+        running_loss = 0.0
+        total_samples = 0
+        correct_samples = 0
+        all_predictions = []
+        all_labels = []
+        incorrect_indices = []
+        
+        with torch.no_grad():
+            for batch_idx, (batch_x1, batch_x2, batch_labels) in enumerate(data_loader):
+                batch_x1, batch_x2, batch_labels = batch_x1.to(device), batch_x2.to(device), batch_labels.to(device)
+                outputs = model(batch_x1, batch_x2)
+                loss = criterion(outputs, batch_labels)
+                running_loss += loss.item()
+                total_samples += batch_x1.size(0)
+                correct_samples += self.calculate_accuracy(outputs, batch_labels)
+                
+                _, predicted = torch.max(outputs, 1)
+                _, labels = torch.max(batch_labels, 1)
+                all_predictions.append(predicted)
+                all_labels.append(labels)
+                
+                # Store indices of incorrect predictions
+                incorrect_indices.extend([batch_idx * data_loader.batch_size + i for i in range(batch_labels.size(0)) if predicted[i] != labels[i]])
+        
+        avg_loss = running_loss / len(data_loader)
+        accuracy = correct_samples / total_samples * 100
+        
+        all_predictions = torch.cat(all_predictions)
+        all_labels = torch.cat(all_labels)
+
+        return avg_loss, accuracy, all_predictions, all_labels, incorrect_indices
+
 
     def load_and_evaluate_model(self, model_path, num_workers: int = 0):
         if num_workers < self.num_workers:
@@ -226,6 +261,7 @@ class model_operator():
         checkpoint = torch.load(model_path)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.model.eval()
         print(f"Model loaded from {model_path}")
 
     def predict_single_example(self,bitboards, metadata):
@@ -240,7 +276,7 @@ class model_operator():
         Returns:
         prediction -- The model's predicted class for the input example.
         """
-        self.model.eval()  # Set the model to evaluation mode
+        # self.model.eval()  # Set the model to evaluation mode
 
         # Ensure the example tensors are on the same device as the model
         device = next(self.model.parameters()).device
@@ -289,6 +325,8 @@ class model_operator():
         _, labels = torch.max(labels, 1)
         correct = (predicted == labels).sum().item()
         return correct
+    
+    
 
     # def calc_shapes(self,dataloader):
 
