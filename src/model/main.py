@@ -11,7 +11,7 @@ import torch
 sys.path.append('./')
 from sqlalchemy.orm import  Session
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
-from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions,delete_all_rollup_game_positions,create_rollup_table
+from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions,delete_all_rollup_game_positions,create_rollup_table, find_rollup_moves
 from Chess_Model.src.model.classes.pgn_processor import pgn_processor
 
 from Chess_Model.src.model.config.config import Settings
@@ -78,30 +78,31 @@ def main():
     # initialize_collections()
     # cowsay.cow(f"testing model functions")    
     # test_pt_model()
-
-
     board = chess.Board()
-    eval = use_model(board=board)
-    print(eval)
-    #b
-    board.push_san('e4')
-    #w
-    eval = use_model(board=board)
-    print(eval)
-    board.push_san('e5')
-    #b
-    eval = use_model(board=board)
-    print(eval)
-    board.push_san('Nf3')
-    #w
-    eval = use_model(board=board)
-    print(eval)
+    results = find_rollup_moves(board=board)
+    print(1)
+    # board = chess.Board()
+    # eval = use_model(board=board)
+    # print(eval)
+    # #b
+    # board.push_san('e4')
+    # #w
+    # eval = use_model(board=board)
+    # print(eval)
+    # board.push_san('e5')
+    # #b
+    # eval = use_model(board=board)
+    # print(eval)
+    # board.push_san('Nf3')
+    # #w
+    # eval = use_model(board=board)
+    # print(eval)
 
-    board.push_san('Bc5')
-    #w
-    eval = use_model(board=board)
-    print(eval)
-    set_seeds(10)
+    # board.push_san('Bc5')
+    # #w
+    # eval = use_model(board=board)
+    # print(eval)
+    # set_seeds(10)
     # evaluate_mcts_plateau(board=board)
 
 

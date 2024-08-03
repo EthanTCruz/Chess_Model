@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import declarative_base
 
+
 Base = declarative_base()
 
 class GamePositions(Base):
@@ -62,3 +63,4 @@ class GamePositionRollup(Base):
             return [mean_w,mean_b,mean_s]
         else: 
             return [0,0,0]
+        
