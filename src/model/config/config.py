@@ -92,6 +92,8 @@ class Settings(BaseSettings):
     useSamplePgn: bool = False
     saveToBucket: bool = False
     tuneParameters: bool = False
+
+    
     
     class Config:
         env_prefix = ''

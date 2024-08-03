@@ -7,6 +7,8 @@ from typing import List, Tuple
 from sqlalchemy import or_, and_, func
 import chess
 import re
+import pandas as pd
+import numpy as np
 
 n_half_moves = Settings().halfMoveBin
 
@@ -121,6 +123,117 @@ def board_to_GamePostition(board: chess.Board,victor: str = "NA"):
 
     return game
 
+
+def board_to_GamePostitionRollup(board: chess.Board):
+    fen = board.fen()
+    fen_components = fen.split(" ")
+    piece_positions = remove_bracketed_portion(fen_components[0])
+    turn = fen_components[1]
+    castling_rights = fen_components[2]
+    en_passant = fen_components[3]
+    half_move_clock = int(fen_components[4])
+    half_move_bin =  1 if half_move_clock >= n_half_moves else  0
+
+    white_wins = 0
+    black_wins = 0
+    stalemates = 0
+
+
+    game = GamePositionRollup(
+        piece_positions = piece_positions,
+        castling_rights = castling_rights,
+        en_passant = en_passant,
+        turn = turn,
+        greater_than_n_half_moves = half_move_bin,
+        white_wins = white_wins,
+        black_wins = black_wins,
+        stalemates = stalemates
+    )
+
+    return game
+
+
+def find_rollup_moves(board:chess.Board,db: Session = next(get_db())):
+    boards = generate_all_possible_boards(board=board)
+    gpr_boards = []
+    for value in boards:
+        board = value['board']
+        gp = board_to_GamePostitionRollup(board=board)
+        value['gp'] = gp
+        gpr_boards.append(gp)
+    
+    conditions = []
+    for gp in gpr_boards:
+        
+        condition = and_(GamePositionRollup.piece_positions == gp.piece_positions, 
+                GamePositionRollup.castling_rights == gp.castling_rights, 
+                GamePositionRollup.turn == gp.turn,
+                GamePositionRollup.en_passant == gp.en_passant, 
+                GamePositionRollup.greater_than_n_half_moves == gp.greater_than_n_half_moves)
+        conditions.append(condition)        
+
+
+    results  = db.query(GamePositionRollup).filter(or_(*conditions)).all()
+
+    game_positions_data = [extract_attributes(gp) for gp in results]
+
+    # Step 3: Convert to a DataFrame
+    df = pd.DataFrame(game_positions_data)
+
+
+    df[['mean_w', 'mean_b', 'mean_s']] = pd.DataFrame(df['win_buckets'].tolist(), index=df.index)
+
+
+    df['log_total_wins'] = np.log10(df['total_wins']+9)
+
+    if df.head(1).turn.values[0] == 'b':
+
+        df['score'] = ( df['mean_w']- df['mean_b'] - df['mean_s']*0.5) * df['log_total_wins']
+    else:
+        df['score'] = (df['mean_b'] - df['mean_w'] - df['mean_s']*0.5) * df['log_total_wins']
+
+
+    max_score_index = df['score'].idxmax()
+
+    # col = ["mean_w","mean_b","mean_s","score","total_wins","log_total_wins"]
+    best_pos = df.loc[max_score_index]
+    if best_pos.score < 1:
+        return 0,0
+    for value in boards:
+        game_position = value['gp']
+        if (best_pos['piece_positions'] == game_position.piece_positions and
+            best_pos['castling_rights'] == game_position.castling_rights and
+            best_pos['turn'] == game_position.turn and
+            best_pos['en_passant'] == game_position.en_passant and
+            best_pos['greater_than_n_half_moves'] == game_position.greater_than_n_half_moves):
+            return value['move'], best_pos  # Return the matching board and its position data
+
+
+
+def extract_attributes(game_position):
+    return {
+        "id": game_position.id,
+        "piece_positions": game_position.piece_positions,
+        "castling_rights": game_position.castling_rights,
+        "en_passant": game_position.en_passant,
+        "turn": game_position.turn,
+        "greater_than_n_half_moves": game_position.greater_than_n_half_moves,
+        "white_wins": game_position.white_wins,
+        "black_wins": game_position.black_wins,
+        "stalemates": game_position.stalemates,
+        "total_wins": game_position.total_wins,
+        "win_buckets": game_position.win_buckets,
+    }
+
+def generate_all_possible_boards(board):
+    all_possible_boards = []
+    
+    for move in board.legal_moves:
+        new_board = board.copy()  # Make a copy of the board
+        new_board.push(move)  # Make the move
+        all_possible_boards.append({'move':move, 'board':new_board})
+    
+    return all_possible_boards
     
 def times_position_repeated(board: chess.Board):
     rep = 0
