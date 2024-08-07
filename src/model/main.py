@@ -11,7 +11,7 @@ import torch
 sys.path.append('./')
 from sqlalchemy.orm import  Session
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
-from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions,delete_all_rollup_game_positions,create_rollup_table, find_rollup_moves
+from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions,delete_all_rollup_game_positions,create_rollup_table, find_rollup_move
 from Chess_Model.src.model.classes.pgn_processor import pgn_processor
 
 from Chess_Model.src.model.config.config import Settings
@@ -79,8 +79,8 @@ def main():
     # cowsay.cow(f"testing model functions")    
     # test_pt_model()
     board = chess.Board()
-    results = find_rollup_moves(board=board)
-    print(1)
+    results = mp.get_rollup_move(board=board)
+    print(results)
     # board = chess.Board()
     # eval = use_model(board=board)
     # print(eval)

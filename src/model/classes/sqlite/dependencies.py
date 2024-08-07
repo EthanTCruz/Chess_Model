@@ -153,7 +153,10 @@ def board_to_GamePostitionRollup(board: chess.Board):
     return game
 
 
-def find_rollup_moves(board:chess.Board,db: Session = next(get_db())):
+def find_rollup_move(board:chess.Board,
+                      db: Session = next(get_db()),
+                      scoring_weights = [1,1,0.5],
+                      score_threshold = 1):
     boards = generate_all_possible_boards(board=board)
     gpr_boards = []
     for value in boards:
@@ -181,6 +184,20 @@ def find_rollup_moves(board:chess.Board,db: Session = next(get_db())):
     df = pd.DataFrame(game_positions_data)
 
 
+    df = add_score_column(df,scoring_weights = scoring_weights)
+    max_score_index = df['score'].idxmax()
+
+    # col = ["mean_w","mean_b","mean_s","score","total_wins","log_total_wins"]
+    best_position = df.loc[max_score_index]
+    if best_position.score < score_threshold:
+        return 0,0
+    
+    move,position = find_move_for_position(boards,best_position=best_position)
+
+    return move, position
+
+def add_score_column(df,scoring_weights = [1,1,0.5]):
+
     df[['mean_w', 'mean_b', 'mean_s']] = pd.DataFrame(df['win_buckets'].tolist(), index=df.index)
 
 
@@ -188,26 +205,27 @@ def find_rollup_moves(board:chess.Board,db: Session = next(get_db())):
 
     if df.head(1).turn.values[0] == 'b':
 
-        df['score'] = ( df['mean_w']- df['mean_b'] - df['mean_s']*0.5) * df['log_total_wins']
+        df['score'] = ( df['mean_w']*scoring_weights[0] \
+                       - df['mean_b']*scoring_weights[1] \
+                         - df['mean_s']*scoring_weights[2]) \
+                            * df['log_total_wins']
     else:
-        df['score'] = (df['mean_b'] - df['mean_w'] - df['mean_s']*0.5) * df['log_total_wins']
+        df['score'] = (df['mean_b']*scoring_weights[1] \
+                        - df['mean_w']*scoring_weights[0] \
+                          - df['mean_s']*scoring_weights[2]) \
+                              * df['log_total_wins']
+    return df
 
 
-    max_score_index = df['score'].idxmax()
-
-    # col = ["mean_w","mean_b","mean_s","score","total_wins","log_total_wins"]
-    best_pos = df.loc[max_score_index]
-    if best_pos.score < 1:
-        return 0,0
+def find_move_for_position(boards,best_position):
     for value in boards:
         game_position = value['gp']
-        if (best_pos['piece_positions'] == game_position.piece_positions and
-            best_pos['castling_rights'] == game_position.castling_rights and
-            best_pos['turn'] == game_position.turn and
-            best_pos['en_passant'] == game_position.en_passant and
-            best_pos['greater_than_n_half_moves'] == game_position.greater_than_n_half_moves):
-            return value['move'], best_pos  # Return the matching board and its position data
-
+        if (best_position['piece_positions'] == game_position.piece_positions and
+            best_position['castling_rights'] == game_position.castling_rights and
+            best_position['turn'] == game_position.turn and
+            best_position['en_passant'] == game_position.en_passant and
+            best_position['greater_than_n_half_moves'] == game_position.greater_than_n_half_moves):
+            return value['move'], best_position  # Return the matching board and its position data
 
 
 def extract_attributes(game_position):
