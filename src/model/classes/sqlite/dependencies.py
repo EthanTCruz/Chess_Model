@@ -177,7 +177,8 @@ def find_rollup_move(board:chess.Board,
 
 
     results  = db.query(GamePositionRollup).filter(or_(*conditions)).all()
-
+    if results == []:
+        return 0
     game_positions_data = [extract_attributes(gp) for gp in results]
 
     # Step 3: Convert to a DataFrame
@@ -190,11 +191,11 @@ def find_rollup_move(board:chess.Board,
     # col = ["mean_w","mean_b","mean_s","score","total_wins","log_total_wins"]
     best_position = df.loc[max_score_index]
     if best_position.score < score_threshold:
-        return 0,0
+        return 0
     
     move,position = find_move_for_position(boards,best_position=best_position)
 
-    return move, position
+    return move
 
 def add_score_column(df,scoring_weights = [1,1,0.5]):
 
