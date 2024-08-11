@@ -60,11 +60,11 @@ nn_kwargs["batch_size"]=batch_size
 # mp = cnn_move_picker(neuralNet=nn)
 
 
-mdp = mongo_data_pipe()
+# mdp = mongo_data_pipe()
 
-ba = board_analyzer()
+# ba = board_analyzer()
 
-mp = move_picker()
+# mp = move_picker()
 
 
 
@@ -78,9 +78,11 @@ def main():
     # initialize_collections()
     # cowsay.cow(f"testing model functions")    
     # test_pt_model()
-    board = chess.Board()
-    results = mp.get_rollup_move(board=board)
-    print(results)
+    
+    verify_functionality_on_sample_dataset()
+    # board = chess.Board()
+    # results = mp.get_rollup_move(board=board)
+    # print(results)
     # board = chess.Board()
     # eval = use_model(board=board)
     # print(eval)
