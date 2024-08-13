@@ -11,11 +11,11 @@ COPY . /usr/src/app/Chess_Model
 
 # Update the package list and install neovim
 RUN apt-get update && \
-    apt-get install -y neovim tmux && \
+    apt-get install -y neovim tmux sqlite3 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r /usr/src/app/Chess_Model/requirements.txt
+RUN pip install --no-cache-dir -r /usr/src/app/Chess_Model/pi_requirements.txt
 
 # Define environment variable
 ENV trainModel True

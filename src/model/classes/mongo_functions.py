@@ -293,7 +293,7 @@ class mongo_data_pipe():
 
     def process_sqlite_boards_to_mongo(self,batch_size: int = 512):
         with SessionLocal() as db:
-            create_rollup_table(batch_size=batch_size,db=SessionLocal())
+            create_rollup_table(yield_size=batch_size,db=SessionLocal())
             row_count = get_rollup_row_count(db=db)
             batch = fetch_all_game_positions_rollup(yield_size=512, db=db)
             dataset = []  # List to accumulate serialized examples

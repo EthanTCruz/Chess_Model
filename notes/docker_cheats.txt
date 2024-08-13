@@ -22,3 +22,11 @@ terraform apply -var-file="variables.tfvars" -target="google_storage_bucket.my_b
 
 terraform plan -var-file="variables.tfvars"
 terraform apply -var-file="variables.tfvars"
+
+
+docker network create my_network
+docker run -d --name my-mongo --network my_network mongo
+docker run -d --name chess_model --network my_network chess_model:latest
+
+# in chess container:
+export mongo_url=mongodb://net-mongo:27017/

@@ -60,11 +60,11 @@ nn_kwargs["batch_size"]=batch_size
 # mp = cnn_move_picker(neuralNet=nn)
 
 
-# mdp = mongo_data_pipe()
+mdp = mongo_data_pipe()
 
-# ba = board_analyzer()
+ba = board_analyzer()
 
-# mp = move_picker()
+mp = move_picker()
 
 
 
