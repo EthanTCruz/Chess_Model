@@ -59,17 +59,14 @@ class mongo_data_pipe():
         else:
             self.results_key = kwargs["results_key"]
 
-        if "mongo_host" not in kwargs:
-            mongo_host=s.mongo_host
-        else:
-            mongo_host = kwargs["mongo_host"]
 
-        if "mongo_port" not in kwargs:
-            mongo_port=s.mongo_port
-        else:
-            mongo_port = kwargs["mongo_port"]
 
-        self.mongo_url = f"mongodb://{mongo_host}:{mongo_port}/"
+        if "mongo_url" not in kwargs:
+            self.mongo_url=s.mongo_url
+        else:
+            self.mongo_url = kwargs["mongo_url"]
+
+
 
         
         if "nnTestSize" not in kwargs:
