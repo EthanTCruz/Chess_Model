@@ -9,6 +9,7 @@ import chess
 import re
 import pandas as pd
 import numpy as np
+import json 
 
 n_half_moves = Settings().halfMoveBin
 
@@ -50,6 +51,8 @@ def delete_all_rollup_game_positions(db: Session = next(get_db())):
         print(f"An error occurred: {e}")
         db.rollback()
 
+
+
 def insert_board_into_db(victor: str,board: chess.Board,db: Session = next(get_db())):
     game_info = board_to_GamePostition(board=board, victor=victor)
     gamesInDB = find_game(game_info=game_info, db=db)
@@ -70,6 +73,21 @@ def find_game(game_info: GamePositions,db: Session = get_db()):
                 GamePositions.en_passant == game_info.en_passant,
                 GamePositions.turn == game_info.turn,
                 GamePositions.greater_than_n_half_moves == game_info.greater_than_n_half_moves)
+            ).first()
+    return results
+
+def find_board_rollup(board):
+    game = board_to_GamePostitionRollup(board=board)
+    results = find_game_rollup(game_info=game)
+    return results
+
+def find_game_rollup(game_info: GamePositionRollup,db: Session = get_db()):
+    results = db.query(GamePositionRollup).filter(
+            and_(GamePositionRollup.piece_positions == game_info.piece_positions,
+                GamePositionRollup.castling_rights == game_info.castling_rights,
+                GamePositionRollup.en_passant == game_info.en_passant,
+                GamePositionRollup.turn == game_info.turn,
+                GamePositionRollup.greater_than_n_half_moves == game_info.greater_than_n_half_moves)
             ).first()
     return results
 
@@ -291,6 +309,15 @@ class GamePositionWithWinBuckets:
         self.total_wins = white_wins + black_wins + stalemates
         self.win_buckets = [white_wins/self.total_wins,black_wins/self.total_wins,stalemates/self.total_wins]
 
+    def to_json(self):
+        return json.dumps({
+            "piece_positions": self.piece_positions,
+            "castling_rights": self.castling_rights,
+            "en_passant": self.en_passant,
+            "turn": self.turn,
+            "greater_than_n_half_moves": self.greater_than_n_half_moves,
+        })
+
 def create_rollup_table(yield_size: int = 200,db: Session = next(get_db())):
     try:
         # Constructing the query with group by and sum
@@ -401,6 +428,34 @@ def get_row_count(db: Session = next(get_db())):
         db.close()
 
 def get_rollup_row_count(db: Session = next(get_db())):
+    try:
+        # Counting the rows in the GamePositions table
+        count = db.query(
+            GamePositions.piece_positions, 
+            GamePositions.castling_rights, 
+            GamePositions.en_passant, 
+            GamePositions.turn, 
+            GamePositions.greater_than_n_half_moves, 
+            GamePositions.white_wins.label('white_wins'),
+            GamePositions.black_wins.label('black_wins'),
+            GamePositions.stalemates.label('stalemates'),
+
+        ).group_by(
+            GamePositions.piece_positions, 
+            GamePositions.castling_rights, 
+            GamePositions.en_passant, 
+            GamePositions.turn, 
+            GamePositions.greater_than_n_half_moves
+        ).count()
+        return count
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+    finally:
+        db.close()
+
+def get_GamePositionRollup_row_size(db: Session = next(get_db())):
     try:
         # Counting the rows in the GamePositions table
         count = db.query(

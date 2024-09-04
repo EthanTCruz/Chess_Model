@@ -11,7 +11,12 @@ import torch
 sys.path.append('./')
 from sqlalchemy.orm import  Session
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
-from Chess_Model.src.model.classes.sqlite.dependencies import delete_all_game_positions,delete_all_rollup_game_positions,create_rollup_table, find_rollup_move
+from Chess_Model.src.model.classes.sqlite.dependencies import (
+    delete_all_game_positions,
+    delete_all_rollup_game_positions,
+    create_rollup_table,
+    find_rollup_move,
+    find_board_rollup)
 from Chess_Model.src.model.classes.pgn_processor import pgn_processor
 
 from Chess_Model.src.model.config.config import Settings
@@ -21,41 +26,23 @@ from Chess_Model.src.model.classes.mongo_functions import mongo_data_pipe
 from Chess_Model.src.model.classes.torch_model import model_operator
 from Chess_Model.src.model.classes.board_analyzer import board_analyzer
 from Chess_Model.src.model.classes.move_picker import move_picker
+from Chess_Model.src.model.classes.redis_functions import redis_pipe
 
 s = Settings()
 ModelFilePath=s.ModelFilePath
 ModelFilename=s.ModelFilename
-scores_file = s.scores_file
+
 pgn_file = s.pgn_file
-games_csv_file = s.games_csv_file
-predictions_board = s.predictions_board
 
 epochs = s.nnEpochs
 batch_size = s.nnBatchSize
 test_size = s.nnTestSize
 
-persist_model = s.persist_model
-score_depth = s.score_depth
-eval_file = s.evalModeFile
 if s.useSamplePgn:
     pgn_file=s.samplePgn
 
 
-target_features = ["white mean","black mean","stalemate mean"]
-nn_kwargs = {}
-nn_kwargs["filename"]=scores_file
-nn_kwargs["target_feature"]=target_features
-nn_kwargs["test_size"]=test_size
-nn_kwargs["ModelFilename"]=ModelFilename
-nn_kwargs["ModelFilePath"]=ModelFilePath
-nn_kwargs["player"]='w'
-nn_kwargs["predictions_board"]=predictions_board
-nn_kwargs["epochs"]=epochs
-nn_kwargs["trainModel"]=s.trainModel
-nn_kwargs["batch_size"]=batch_size
-#nn = neural_net(**nn_kwargs)
 
-# nn = cnn_model(**nn_kwargs)
 
 # mp = cnn_move_picker(neuralNet=nn)
 
@@ -66,50 +53,26 @@ ba = board_analyzer()
 
 mp = move_picker()
 
+rp = redis_pipe()
 
 
 def main():
-
-    
-
-    # cowsay.cow(f"Converting pgn file to sqlite db")    
-    # pgn_to_db(pgn_file=pgn_file)
-    # cowsay.cow(f"populating mongodb")    
-    # initialize_collections()
-    # cowsay.cow(f"testing model functions")    
-    # test_pt_model()
-    
-    verify_functionality_on_sample_dataset()
-    # board = chess.Board()
-    # results = mp.get_rollup_move(board=board)
-    # print(results)
-    # board = chess.Board()
-    # eval = use_model(board=board)
-    # print(eval)
-    # #b
-    # board.push_san('e4')
-    # #w
-    # eval = use_model(board=board)
-    # print(eval)
-    # board.push_san('e5')
-    # #b
-    # eval = use_model(board=board)
-    # print(eval)
-    # board.push_san('Nf3')
-    # #w
-    # eval = use_model(board=board)
-    # print(eval)
-
-    # board.push_san('Bc5')
-    # #w
-    # eval = use_model(board=board)
-    # print(eval)
-    # set_seeds(10)
-    # evaluate_mcts_plateau(board=board)
-
-
-
+    # test_speeds()
+    redis_to_sqlite()
+    initialize_collections()
     return 0
+
+def test_speeds():
+    board = chess.Board()
+    board.push_san('e4')
+    results = rp.get_board_results(board=board)
+    print(results)
+    results = find_board_rollup(board=board)
+    print(results)
+
+def redis_to_sqlite():
+    rp.clear_redis()
+    rp.sqlite_to_redis()
 
 def create_rollup_table():
     delete_all_rollup_game_positions()
@@ -182,7 +145,7 @@ def use_model(board: chess.Board = chess.Board()):
 def initialize_collections():
     mdp.open_connections()
     
-    mdp.initialize_data(batch_size=512)
+    mdp.initialize_data(batch_size=2048)
     mdp.close_connections()
 
 

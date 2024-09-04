@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import declarative_base
-
+import json
 
 Base = declarative_base()
 
@@ -35,7 +35,24 @@ class GamePositions(Base):
             return [mean_w,mean_b,mean_s]
         else: 
             return [0,0,0]
+        
 
+
+    @staticmethod
+    def from_json(json_str,win_buckets):
+        data = json.loads(json_str)
+        win_buckets = json.loads(win_buckets)
+        return GamePositions(
+
+            piece_positions=data["piece_positions"],
+            castling_rights=data["castling_rights"],
+            en_passant=data["en_passant"],
+            turn=data["turn"],
+            greater_than_n_half_moves=data["greater_than_n_half_moves"],
+            white_wins=win_buckets["white_wins"],
+            black_wins=win_buckets["black_wins"],
+            stalemates=win_buckets["stalemates"]
+        )
 class GamePositionRollup(Base):
     __tablename__ = "GamePositionRollup"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)

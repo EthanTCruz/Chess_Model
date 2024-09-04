@@ -5,12 +5,15 @@ import hashlib
 import json
 from tqdm import tqdm
 import time
-
+import redis
+import hiredis
 
 from Chess_Model.src.model.config.config import Settings
+from Chess_Model.src.model.classes.sqlite.models import GamePositions
 from Chess_Model.src.model.classes.sqlite.database import SessionLocal
 from Chess_Model.src.model.classes.cnn_bb_scorer import boardCnnEval
-from Chess_Model.src.model.classes.sqlite.dependencies import   fetch_all_game_positions_rollup,get_rollup_row_count,create_rollup_table
+from Chess_Model.src.model.classes.redis_functions import redis_pipe
+from Chess_Model.src.model.classes.sqlite.dependencies import   fetch_all_game_positions_rollup,get_GamePositionRollup_row_size,create_rollup_table
 
 class mongo_data_pipe():
     def __init__(self,**kwargs) -> None:
@@ -83,6 +86,8 @@ class mongo_data_pipe():
             self.batch_size=s.BatchSize
         else:
             self.batch_size = kwargs["BatchSize"]  
+
+        self.r = redis_pipe()
         
         self.np_means_file = s.np_means_file
         self.np_stds_file = s.np_stds_file
@@ -288,33 +293,41 @@ class mongo_data_pipe():
 
 
 
-    def process_sqlite_boards_to_mongo(self,batch_size: int = 512):
-        with SessionLocal() as db:
-            create_rollup_table(yield_size=batch_size,db=SessionLocal())
-            row_count = get_rollup_row_count(db=db)
-            batch = fetch_all_game_positions_rollup(yield_size=512, db=db)
-            dataset = []  # List to accumulate serialized examples
-            for game in tqdm(batch, total=row_count, desc="Processing Feature Data"):
-                try:
-                    if game:
-                        
-                        document = self.game_to_doc_evaluation(game=game)
+    def process_sqlite_boards_to_mongo(self, batch_size: int = 512):
 
-                        document['_id'] = get_hash_id(doc=document)
-                        
-                        dataset.append(document)
+        # self.r.sqlite_to_redis(batch_size=batch_size)
+        row_count = self.r.get_db_size()  # Total number of keys in Redis
+        batch = self.r.redis_key_generator(batch_size=batch_size)  # Generate keys in batches
+        dataset = []  # List to accumulate serialized examples
 
+        # Initialize the tqdm progress bar
+        with tqdm(total=row_count, desc="Processing Feature Data") as pbar:
+            for games in batch:
+                for position, results in games:
+                    try:
+                        if position:
+                            game = GamePositions.from_json(json_str=position, win_buckets=results)
+                            document = self.game_to_doc_evaluation(game=game)
 
+                            document['_id'] = get_hash_id(doc=document)
+                            
+                            dataset.append(document)
 
-                        # Check if we've accumulated enough examples to write a batch
-                        if len(dataset) >= batch_size:
+                            # Check if we've accumulated enough examples to write a batch
+                            if len(dataset) >= batch_size:
+                                self.main_collection.insert_many(dataset)
+                                dataset = []  # Reset the list after writing
 
-                            self.main_collection.insert_many(dataset)
-                            dataset = []  # Reset the list after writing
-                    else:
-                        return 1
-                except Exception as e:
-                    raise Exception(e)
+                            # Update the progress bar for each processed position
+                            pbar.update(1)
+                        else:
+                            return 1
+                    except Exception as e:
+                        raise Exception(e)
+
+            # If there are any remaining documents, insert them into MongoDB
+            if dataset:
+                self.main_collection.insert_many(dataset)
                 
     def game_to_doc_evaluation(self,game):
 

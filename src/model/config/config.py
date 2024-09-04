@@ -19,24 +19,13 @@ class Settings(BaseSettings):
 
     ModelFilePath: str =f"{srcModelDirectory}/chess_model/"
     ModelFilename: str = "model.h5"
-    scores_file: str = f"{srcModelDirectory}/data/data.csv"
     pgn_file: str = f"{srcModelDirectory}/pgn/full_dataset/"
-    games_csv_file: str = f"{srcModelDirectory}/data/games.csv"
-    predictions_board: str = f"{srcModelDirectory}/data/predictions.csv"
-    self_play: str = f"{srcModelDirectory}/data/self_play.pgn"
-    persist_model: bool = True
-    scaler_weights: str = f"{srcModelDirectory}/data/scaler.joblib"
-    recordsData: str = f"{srcModelDirectory}/data/feature_data.tfrecord"
-    recordsDataCopy: str = f"{srcModelDirectory}/data/feature_data_copy.tfrecord"
-    recordsDataTrain: str = f"{srcModelDirectory}/data/train_data.tfrecord"
-    recordsDataTest: str = f"{srcModelDirectory}/data/test_data.tfrecord"
-    recordsDataValidation: str = f"{srcModelDirectory}/data/validation_data.tfrecord"
+
+
 
     SelfPlayModelFilename: str ="self_play_model"
     
-    samplePgn: str = f"{srcModelDirectory}/pgn/sample_dataset/"
-    nnPredictionsCSV: str = f"{srcModelDirectory}/data/nn_predictions.csv"
-    selfTrainBaseMoves: str = f"{srcModelDirectory}/data/simGames.csv"
+
     nnLogDir: str = "./Chess_Model/logs/"
     nnModelCheckpoint: str = f"{ModelFilePath}checkpoints/"
 
@@ -50,11 +39,7 @@ class Settings(BaseSettings):
     #MCST parameters:
     UCB_Constant: float = 0.1
 
-    copy_file: str = f"{srcModelDirectory}/data/copy_data.csv"
-    trainingFile: str = f"{srcModelDirectory}/data/training.csv"
-    testingFile: str = f"{srcModelDirectory}/data/testing.csv"
-    validationFile: str = f"{srcModelDirectory}/data/validation.csv"
-    evalModeFile: str = f"{srcModelDirectory}/data/modelEval.csv"
+
 
     GOOGLE_APPLICATION_CREDENTIALS: str = "C:\\Users\\ethan\\git\\Full_Chess_App\\Chess_Model\\terraform\\secret.json"
     BUCKET_NAME: str = "chess-model-weights"
@@ -81,6 +66,10 @@ class Settings(BaseSettings):
     mongo_port: int = 27017
 
     mongo_url: str = f"mongodb://{mongo_host}:{mongo_port}/"
+
+    redis_host: str = "192.168.68.50"
+    redis_port: int = 6379
+    redis_db: int = 1
     
     num_workers: int = 0
 
