@@ -26,7 +26,7 @@ from Chess_Model.src.model.classes.mongo_functions import mongo_data_pipe
 from Chess_Model.src.model.classes.torch_model import model_operator
 from Chess_Model.src.model.classes.board_analyzer import board_analyzer
 from Chess_Model.src.model.classes.move_picker import move_picker
-from Chess_Model.src.model.classes.redis_functions import redis_pipe
+
 
 s = Settings()
 ModelFilePath=s.ModelFilePath
@@ -53,26 +53,15 @@ ba = board_analyzer()
 
 mp = move_picker()
 
-rp = redis_pipe()
 
 
 def main():
     # test_speeds()
-    redis_to_sqlite()
+    # pgn_to_db()
     initialize_collections()
     return 0
 
-def test_speeds():
-    board = chess.Board()
-    board.push_san('e4')
-    results = rp.get_board_results(board=board)
-    print(results)
-    results = find_board_rollup(board=board)
-    print(results)
 
-def redis_to_sqlite():
-    rp.clear_redis()
-    rp.sqlite_to_redis()
 
 def create_rollup_table():
     delete_all_rollup_game_positions()
@@ -145,7 +134,7 @@ def use_model(board: chess.Board = chess.Board()):
 def initialize_collections():
     mdp.open_connections()
     
-    mdp.initialize_data(batch_size=2048)
+    mdp.initialize_data(batch_size=512)
     mdp.close_connections()
 
 
