@@ -2,6 +2,6 @@
 *
 # Except this .gitignore file
 !.gitignore
-!gameData.db
+
 !modelEval.csv
 !EndgameTbl/
