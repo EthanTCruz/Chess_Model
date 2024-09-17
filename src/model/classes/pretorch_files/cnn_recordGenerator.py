@@ -4,8 +4,8 @@ from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
-from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.pretorch_files.cnn_game_analyzer import game_analyzer
+from chess_engine.src.model.config.config import Settings
+from chess_engine.src.model.classes.pretorch_files.cnn_game_analyzer import game_analyzer
 
 import random
 from joblib import dump, load, Parallel, delayed

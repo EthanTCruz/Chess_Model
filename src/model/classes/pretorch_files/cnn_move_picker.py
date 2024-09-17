@@ -1,10 +1,10 @@
 import pandas as pd
 
 import chess
-from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.MCTS import mcts
-from Chess_Model.src.model.classes.pretorch_files.potential_board_populator import populator
-from Chess_Model.src.model.classes.cnn_MCTS import mcts as mcts2
+from chess_engine.src.model.config.config import Settings
+from chess_engine.src.model.classes.MCTS import mcts
+from chess_engine.src.model.classes.pretorch_files.potential_board_populator import populator
+from chess_engine.src.model.classes.cnn_MCTS import mcts as mcts2
 
 
 class move_picker():

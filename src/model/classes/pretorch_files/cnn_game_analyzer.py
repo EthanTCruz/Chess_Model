@@ -7,11 +7,11 @@ from sqlalchemy.orm import  Session
 from tqdm import tqdm
 
 
-from Chess_Model.src.model.classes.cnn_bb_scorer import boardCnnEval
-from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.sqlite.dependencies import  fetch_all_game_positions_rollup,get_rollup_row_count,board_to_GamePostition
-from Chess_Model.src.model.classes.sqlite.models import GamePositions
-from Chess_Model.src.model.classes.sqlite.database import SessionLocal
+from chess_engine.src.model.classes.cnn_bb_scorer import boardCnnEval
+from chess_engine.src.model.config.config import Settings
+from chess_engine.src.model.classes.sqlite.dependencies import  fetch_all_game_positions_rollup,get_rollup_row_count,board_to_GamePostition
+from chess_engine.src.model.classes.sqlite.models import GamePositions
+from chess_engine.src.model.classes.sqlite.database import SessionLocal
 
 metadata_key = 'metadata'
 bitboards_key = 'positions_data'

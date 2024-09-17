@@ -4,7 +4,7 @@ import chess.engine
 import random
 from math import log,sqrt,e,inf
 import ast
-from Chess_Model.src.model.config.config import Settings
+from chess_engine.src.model.config.config import Settings
 import torch
 import numpy as np
 

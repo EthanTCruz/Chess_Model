@@ -1,11 +1,11 @@
 import chess
-from Chess_Model.src.model.classes.endgame import endgamePicker
+from chess_engine.src.model.classes.endgame import endgamePicker
 import numpy as np
 from math import ceil
-from Chess_Model.src.model.classes.sqlite.dependencies import board_to_GamePostition
-from Chess_Model.src.model.classes.sqlite.models import GamePositions
-from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.metadata_scorer import metaDataBoardEval
+from chess_engine.src.model.classes.sqlite.dependencies import board_to_GamePostition
+from chess_engine.src.model.classes.sqlite.models import GamePositions
+from chess_engine.src.model.config.config import Settings
+from chess_engine.src.model.classes.metadata_scorer import metaDataBoardEval
 import torch
 class boardCnnEval:
     def __init__(self,fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',board: chess.Board = chess.Board()):

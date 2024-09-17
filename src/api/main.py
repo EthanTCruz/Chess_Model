@@ -7,8 +7,8 @@ import json
 import chess
 
 
-from Chess_Model.src.model.classes.move_picker import move_picker
-from Chess_Model.src.model.config.config import Settings
+from chess_engine.src.model.classes.move_picker import move_picker
+from chess_engine.src.model.config.config import Settings
 import uvicorn
 
 

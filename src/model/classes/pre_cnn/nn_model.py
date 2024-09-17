@@ -2,15 +2,15 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
-from Chess_Model.src.model.classes.game_analyzer import game_analyzer
+from chess_engine.src.model.classes.game_analyzer import game_analyzer
 import numpy as np
 import chess
-from Chess_Model.src.model.config.config import Settings
+from chess_engine.src.model.config.config import Settings
 import random
 from joblib import dump, load
-from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_blob
+from chess_engine.src.model.classes.gcp_operations import upload_blob, download_blob
 import math
-from Chess_Model.src.model.classes.dataGenerator import data_generator,flat_string_to_array,reshape_to_matrix
+from chess_engine.src.model.classes.dataGenerator import data_generator,flat_string_to_array,reshape_to_matrix
 from datetime import datetime
 from tensorflow.keras.layers import Input, Dense, Conv2D, Flatten, Concatenate
 from tensorflow.keras.models import Model

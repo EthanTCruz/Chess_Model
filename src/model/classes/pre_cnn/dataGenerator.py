@@ -4,7 +4,7 @@ from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
-from Chess_Model.src.model.config.config import Settings
+from chess_engine.src.model.config.config import Settings
 import random
 from joblib import dump, load
 import shutil

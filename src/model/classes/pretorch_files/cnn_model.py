@@ -13,16 +13,16 @@ def configure_gpu_memory_growth():
 
 configure_gpu_memory_growth()
 
-from Chess_Model.src.model.classes.pretorch_files.cnn_game_analyzer import game_analyzer
+from chess_engine.src.model.classes.pretorch_files.cnn_game_analyzer import game_analyzer
 import numpy as np
 import chess
-from Chess_Model.src.model.config.config import Settings
+from chess_engine.src.model.config.config import Settings
 import random
 from joblib import dump, load
-from Chess_Model.src.model.classes.gcp_operations import upload_blob, download_blob
+from chess_engine.src.model.classes.gcp_operations import upload_blob, download_blob
 import math
-from Chess_Model.src.model.classes.cnn_dataGenerator import data_generator
-from Chess_Model.src.model.classes.cnn_recordGenerator import record_generator
+from chess_engine.src.model.classes.cnn_dataGenerator import data_generator
+from chess_engine.src.model.classes.cnn_recordGenerator import record_generator
 from datetime import datetime
 from tensorflow.keras.layers import Input, Dense, Flatten, Concatenate
 from tensorflow.keras.models import Model
@@ -222,7 +222,7 @@ class convolutional_neural_net():
                                                  save_weights_only=True,
                                                  verbose=1)
 
-        #tensorboard --logdir='/home/user/Chess_Model/logs/train'
+        #tensorboard --logdir='/home/user/chess_engine/logs/train'
         gpus = tf.config.list_physical_devices('GPU')
         if len(gpus) > 0:
             for gpu in gpus:

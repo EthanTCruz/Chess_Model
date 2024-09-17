@@ -1,5 +1,5 @@
 import chess
-from Chess_Model.src.model.classes.endgame import endgamePicker
+from chess_engine.src.model.classes.endgame import endgamePicker
 
 class boardEval:
     def __init__(self,fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',board: chess.Board = None):

@@ -4,13 +4,13 @@ import csv
 import os
 import pandas as pd
 from sqlalchemy.orm import  Session
-from Chess_Model.src.model.classes.pre_cnn.scorer import boardEval
-from Chess_Model.src.model.classes.cnn_scorer import boardCnnEval
+from chess_engine.src.model.classes.pre_cnn.scorer import boardEval
+from chess_engine.src.model.classes.cnn_scorer import boardCnnEval
 from tqdm import tqdm
-from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.sqlite.dependencies import  fetch_all_game_positions_rollup,get_rollup_row_count,board_to_GamePostition
-from Chess_Model.src.model.classes.sqlite.models import GamePositions
-from Chess_Model.src.model.classes.sqlite.database import SessionLocal
+from chess_engine.src.model.config.config import Settings
+from chess_engine.src.model.classes.sqlite.dependencies import  fetch_all_game_positions_rollup,get_rollup_row_count,board_to_GamePostition
+from chess_engine.src.model.classes.sqlite.models import GamePositions
+from chess_engine.src.model.classes.sqlite.database import SessionLocal
 Start_value =  "['d2d4', 'e7e6', 'c1h6']:rnbqkbnr/pppp1ppp/4p2B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2"
 
 class game_analyzer:

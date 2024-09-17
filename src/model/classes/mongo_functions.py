@@ -8,12 +8,12 @@ import time
 import redis
 import hiredis
 
-from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.sqlite.models import GamePositions
-from Chess_Model.src.model.classes.sqlite.database import SessionLocal
-from Chess_Model.src.model.classes.cnn_bb_scorer import boardCnnEval
+from chess_engine.src.model.config.config import Settings
+from chess_engine.src.model.classes.sqlite.models import GamePositions
+from chess_engine.src.model.classes.sqlite.database import SessionLocal
+from chess_engine.src.model.classes.cnn_bb_scorer import boardCnnEval
 
-from Chess_Model.src.model.classes.sqlite.dependencies import   fetch_all_game_positions_rollup,get_GamePositionRollup_row_size,create_rollup_table
+from chess_engine.src.model.classes.sqlite.dependencies import   fetch_all_game_positions_rollup,get_GamePositionRollup_row_size,create_rollup_table
 
 class mongo_data_pipe():
     def __init__(self,**kwargs) -> None:
@@ -69,6 +69,14 @@ class mongo_data_pipe():
         else:
             self.mongo_url = kwargs["mongo_url"]
 
+        # Replace with the IP of your node and the NodePort
+        client = MongoClient(self.mongo_url)
+        try:
+            # The ping command is a way to test connectivity to the database
+            client.admin.command('ping')
+            print(f"MongoDB connection successful with: {self.mongo_url}")
+        except Exception as e:
+            print(f"Error: {e}")
 
 
         
@@ -97,7 +105,7 @@ class mongo_data_pipe():
         
 
     def create_client(self):
-        client = MongoClient(self.mongo_url)
+        client = MongoClient(self.mongo_url, maxPoolSize=100,w=1)
         return client
 
     def open_connections(self):
@@ -294,32 +302,37 @@ class mongo_data_pipe():
 
 
     def process_sqlite_boards_to_mongo(self,batch_size: int = 512):
-        with SessionLocal() as db:
-            create_rollup_table(yield_size=batch_size)
-            row_count = get_GamePositionRollup_row_size()
-            batch = fetch_all_game_positions_rollup(yield_size=batch_size, db=db)
-            dataset = []  # List to accumulate serialized examples
-            for game in tqdm(batch, total=row_count, desc="Processing Feature Data"):
-                try:
-                    if game:
+
+        row_count = get_GamePositionRollup_row_size()
+        batch = fetch_all_game_positions_rollup(yield_size=512)
+        dataset = []  # List to accumulate serialized examples
+        for game in tqdm(batch, total=row_count, desc="Processing Feature Data"):
+            try:
+                if game:
+                    
+                    document = self.game_to_doc_evaluation(game=game)
+
+                    document['_id'] = get_hash_id(doc=document)
+                    
+                    dataset.append(InsertOne(document))
+
+
+
+                    # Check if we've accumulated enough examples to write a batch
+                    if len(dataset) >= batch_size:
                         
-                        document = self.game_to_doc_evaluation(game=game)
+                        self.main_collection.bulk_write(dataset)
+                        dataset = []  # Reset the list after writing
+                else:
+                    return 1
+            except Exception as e:
+                raise Exception(e)
 
-                        document['_id'] = get_hash_id(doc=document)
-                        
-                        dataset.append(document)
-
-
-
-                        # Check if we've accumulated enough examples to write a batch
-                        if len(dataset) >= batch_size:
-
-                            self.main_collection.insert_many(dataset)
-                            dataset = []  # Reset the list after writing
-                    else:
-                        return 1
-                except Exception as e:
-                    raise Exception(e)
+    # def bulk_insert(self, collected_docs, collections_and_keys):
+    #     for key, collection_client in collections_and_keys:
+    #         if collected_docs[key]:
+    #             requests = [InsertOne(doc) for doc in collected_docs[key]]
+    #             collection_client.bulk_write(requests)
                 
     def game_to_doc_evaluation(self,game):
 

@@ -2,8 +2,10 @@ from pydantic_settings import BaseSettings
 from math import sqrt
 class Settings(BaseSettings): 
 
-    BatchSize: int = 1024
-    
+    BatchSize: int = 521
+    DataLoaderBatchSize: int = 512
+    num_workers: int = 0
+
     nnGenBatchSize: int = 1
     
     nnBatchSize: int = 100
@@ -14,19 +16,19 @@ class Settings(BaseSettings):
     nnTestSize: float = 0.02
     nnValidationSize: float  = 0.02
 
-    srcModelDirectory: str = './Chess_Model/src/model'
+    srcModelDirectory: str = './src/model'
     data_dir: str = f"{srcModelDirectory}/data"
 
     ModelFilePath: str =f"{srcModelDirectory}/chess_model/"
     ModelFilename: str = "model.h5"
     pgn_file: str = f"{srcModelDirectory}/pgn/full_dataset/"
 
-
+    samplePgn: str = f"{srcModelDirectory}/pgn/sample_dataset/"
 
     SelfPlayModelFilename: str ="self_play_model"
     
 
-    nnLogDir: str = "./Chess_Model/logs/"
+    nnLogDir: str = "./chess_engine/logs/"
     nnModelCheckpoint: str = f"{ModelFilePath}checkpoints/"
 
     #should run under assumption score depth will always be greater than mate depth
@@ -62,16 +64,19 @@ class Settings(BaseSettings):
 
     torch_model_file: str = f"{srcModelDirectory}/chess_model/torch_model.pth"
 
-    mongo_host: str = "localhost"
-    mongo_port: int = 27017
+    mongo_host: str = "10.1.135.1"
+    # mongo_port: str = '27017'
+    mongo_port: str = '30017'
 
-    mongo_url: str = f"mongodb://{mongo_host}:{mongo_port}/"
+    # mongo_url: str = f"mongodb://{mongo_host}:{mongo_port}/"
+    # "mongodb://mongo:27017/your-db-name"
+    mongo_url: str = "mongodb://192.168.68.50:30017"
 
     redis_host: str = "192.168.68.50"
     redis_port: int = 6379
     redis_db: int = 1
     
-    num_workers: int = 0
+
 
     halfMoveBin: int = 25
 
@@ -86,4 +91,5 @@ class Settings(BaseSettings):
     
     class Config:
         env_prefix = ''
+        env_file = '.conf-env'
 

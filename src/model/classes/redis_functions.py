@@ -1,8 +1,8 @@
 import chess
 import redis
 import hiredis
-from Chess_Model.src.model.config.config import Settings
-from Chess_Model.src.model.classes.sqlite.dependencies import (
+from chess_engine.src.model.config.config import Settings
+from chess_engine.src.model.classes.sqlite.dependencies import (
     fetch_all_game_positions_rollup,
     get_rollup_row_count,
     board_to_GamePostitionRollup,

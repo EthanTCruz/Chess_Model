@@ -1,5 +1,5 @@
 import chess
-from Chess_Model.src.model.config.config import Settings
+from chess_engine.src.model.config.config import Settings
 
 
 

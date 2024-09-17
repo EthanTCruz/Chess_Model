@@ -1,7 +1,7 @@
-from Chess_Model.src.model.classes.board_analyzer import board_analyzer
-from Chess_Model.src.model.classes.sqlite.dependencies import find_rollup_move
+from chess_engine.src.model.classes.board_analyzer import board_analyzer
+from chess_engine.src.model.classes.sqlite.dependencies import find_rollup_move
 
-from Chess_Model.src.model.classes.MCTS import mcts
+from chess_engine.src.model.classes.MCTS import mcts
 import chess
 import random
 from math import sqrt

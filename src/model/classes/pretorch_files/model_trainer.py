@@ -1,14 +1,14 @@
-from Chess_Model.src.model.classes.pgn_processor import pgn_processor
+from chess_engine.src.model.classes.pgn_processor import pgn_processor
 
-from Chess_Model.src.model.classes.pretorch_files.game_analyzer import game_analyzer
+from chess_engine.src.model.classes.pretorch_files.game_analyzer import game_analyzer
 
-from Chess_Model.src.model.classes.pretorch_files.potential_board_populator import populator
+from chess_engine.src.model.classes.pretorch_files.potential_board_populator import populator
 
 import os
 import chess
-from Chess_Model.src.model.config.config import Settings
+from chess_engine.src.model.config.config import Settings
 import random
-from Chess_Model.src.model.classes.cnn_move_picker import move_picker
+from chess_engine.src.model.classes.cnn_move_picker import move_picker
 
 import chess.pgn
 import ast
