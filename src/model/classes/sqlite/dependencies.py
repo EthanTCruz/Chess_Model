@@ -1,4 +1,3 @@
-
 from chess_engine.src.model.classes.sqlite.database import SessionLocal
 from chess_engine.src.model.classes.sqlite.models import GamePositions,GamePositionRollup
 from chess_engine.src.model.config.config import Settings

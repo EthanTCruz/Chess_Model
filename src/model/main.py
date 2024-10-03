@@ -17,6 +17,7 @@ from chess_engine.src.model.classes.sqlite.dependencies import (
     create_rollup_table,
     find_rollup_move,
     find_board_rollup)
+from chess_engine.src.model.classes.sqlite.dataset_splitter import split_game_positions_in_batches
 from chess_engine.src.model.classes.pgn_processor import pgn_processor
 
 from chess_engine.src.model.config.config import Settings
@@ -58,7 +59,8 @@ if s.useSamplePgn:
 def main():
     # test_speeds()
     # pgn_to_db()
-    full_data_to_ml()
+    split_game_positions_in_batches(train_pct = .6, test_pct = .2, validation_pct = 0.2)
+    # full_data_to_ml()
     # initialize_collections()
     return 0
 
