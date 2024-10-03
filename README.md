@@ -31,26 +31,9 @@ Test accuracy: 0.8471933007240295
 Test loss: 0.44103720784187317
 Test accuracy: 0.8269000053405762
 
-Features to add:
-Add space advantage feature using coordinates of pawns and distance from respective sides, also check for chains based on attackers of same type and whether or not they are pawns
-
-Todo:
-Craft algorithim for move scoring
-Create function in main for creating and training and model and one for using it
-(Idea) Create auto factor analysis of features added based on values in some file
-Still have to evaluate use case of when checkmate is within depth of moves or less
-Get rid of Mate redis db
-
-Notes:
-Discovered my term for compression applied to trees for sequential games is known as minmax pruning I believe.
-For scalability in the future, add a machine id to the redis keys for moves uploaded by specific instances
-move_picker function compress has logical error and now eraeses db up to winning move, instead want all moves even if losing for analysis.
-move_picker compress function needs abstraction, and line 269 is certainely a logical error as it deletes keys which are 2 moves long and therefore not fully compressed yet.
 
 
-Future optomizations:
-Use redis pipeline for mass key readings and uploads
-Use opening book in begining
+
 
 docker tag chess_model:v1 ethancruz/chess_model
 docker push ethancruz/chess_model:latest
@@ -72,3 +55,55 @@ Test accuracy: 0.8449500799179077
 Batch size: 50, epochs: 300
 Test loss: 0.3614208698272705
 Test accuracy: 0.8468728065490723
+
+https://stackoverflow.com/questions/69926198/generatordatasetopdataset-will-not-be-optimized-because-the-dataset-does-not-im
+
+Latest with addeed pgn's:
+epochs,loss,accuracy
+16,1.052001714706421,0.5005179047584534
+32,1.0865944623947144,0.3974415957927704
+
+shapes_tuple
+[(8, 8, 50), (40,)]
+
+07/11/24
+(chess-model-env) PS C:\Users\ethan\git\Full_Chess_App> python .\Chess_Model\src\model\main.py
+docs calcd: 782594, m: 782594, n: 45
+docs calcd: 782594, m: 782594, n: 45
+Loaded 782594 documents.
+Loaded 16318 documents.
+Loaded 16192 documents.
+Epoch 1/16: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [15:36<00:00,  1.22s/it]
+Epoch [1/16], Train Loss: 0.9841, Train Accuracy: 50.48%, Val Loss: 0.9263, Val Accuracy: 55.05%
+Epoch 2/16: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [20:46<00:00,  1.63s/it]
+Epoch [2/16], Train Loss: 0.9002, Train Accuracy: 56.56%, Val Loss: 0.8568, Val Accuracy: 59.71%
+Epoch 3/16: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [20:39<00:00,  1.62s/it]
+Epoch [3/16], Train Loss: 0.8190, Train Accuracy: 61.83%, Val Loss: 0.7889, Val Accuracy: 63.77%
+Epoch 4/16: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [20:34<00:00,  1.61s/it]
+Epoch [4/16], Train Loss: 0.7377, Train Accuracy: 66.44%, Val Loss: 0.7245, Val Accuracy: 67.10%
+Epoch 5/16: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [20:29<00:00,  1.61s/it]
+Epoch [5/16], Train Loss: 0.6711, Train Accuracy: 69.98%, Val Loss: 0.6682, Val Accuracy: 70.51%
+Epoch 6/16: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [20:39<00:00,  1.62s/it]
+Epoch [6/16], Train Loss: 0.6146, Train Accuracy: 72.78%, Val Loss: 0.6295, Val Accuracy: 72.25%
+Epoch 7/16: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [23:09<00:00,  1.82s/it]
+Epoch [7/16], Train Loss: 0.5645, Train Accuracy: 75.22%, Val Loss: 0.5932, Val Accuracy: 74.04%
+Epoch 8/16: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [23:22<00:00,  1.83s/it]
+Epoch [8/16], Train Loss: 0.5194, Train Accuracy: 77.35%, Val Loss: 0.5609, Val Accuracy: 75.71%
+Epoch 9/16: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [22:55<00:00,  1.80s/it]
+Epoch [9/16], Train Loss: 0.4809, Train Accuracy: 79.19%, Val Loss: 0.5245, Val Accuracy: 77.18%
+Epoch 10/16: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [22:55<00:00,  1.80s/it]
+Epoch [10/16], Train Loss: 0.4453, Train Accuracy: 80.81%, Val Loss: 0.4935, Val Accuracy: 79.00%
+Epoch 11/16: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [22:19<00:00,  1.75s/it] 
+Epoch [11/16], Train Loss: 0.4167, Train Accuracy: 82.09%, Val Loss: 0.4838, Val Accuracy: 79.43%
+Epoch 12/16: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [19:47<00:00,  1.55s/it] 
+Epoch [12/16], Train Loss: 0.3918, Train Accuracy: 83.24%, Val Loss: 0.4835, Val Accuracy: 79.15%
+Epoch 13/16: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [19:59<00:00,  1.57s/it] 
+Epoch [13/16], Train Loss: 0.3698, Train Accuracy: 84.24%, Val Loss: 0.4477, Val Accuracy: 81.32%
+Epoch 14/16: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [19:43<00:00,  1.55s/it] 
+Epoch [14/16], Train Loss: 0.3499, Train Accuracy: 85.09%, Val Loss: 0.4635, Val Accuracy: 80.78%
+Epoch 15/16: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [20:00<00:00,  1.57s/it] 
+Epoch [15/16], Train Loss: 0.3348, Train Accuracy: 85.75%, Val Loss: 0.4484, Val Accuracy: 81.54%
+Epoch 16/16: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 765/765 [19:55<00:00,  1.56s/it] 
+Epoch [16/16], Train Loss: 0.3175, Train Accuracy: 86.52%, Val Loss: 0.4454, Val Accuracy: 81.70%
+Test Loss: 0.4273, Test Accuracy: 82.31%
+Model saved to ./Chess_Model/src/model/chess_model/torch_model.pth

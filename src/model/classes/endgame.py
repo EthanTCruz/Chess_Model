@@ -1,5 +1,5 @@
 import chess
-from Chess_Model.src.model.config.config import Settings
+from chess_engine.src.model.config.config import Settings
 import chess
 import chess.syzygy
 from math import inf
@@ -39,6 +39,7 @@ class endgamePicker():
         if result is not None:
             results = result
         return results
+
 
     def find_endgame_best_move_dtz(self,board: chess.Board):
         temp = board.copy()
