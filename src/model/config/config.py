@@ -93,3 +93,4 @@ class Settings(BaseSettings):
         env_prefix = ''
         env_file = '.conf-env'
 
+settings = Settings()

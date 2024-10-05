@@ -2,8 +2,22 @@ from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy.orm import relationship, declarative_base
 import json
 import hashlib
+from chess_engine.src.model.config.config import settings
 
 Base = declarative_base()
+
+def get_hash(piece_positions,castling_rights,en_passant,turn):
+        game_string = (
+            piece_positions
+            + castling_rights
+            + en_passant
+            + turn
+            
+        )
+        hash_object = hashlib.sha256(game_string.encode())
+        hex_dig = hash_object.hexdigest()
+        return hex_dig
+
 
 class GamePositions(Base):
     __tablename__ = "GamePositions"
@@ -12,10 +26,14 @@ class GamePositions(Base):
     castling_rights = Column(String, index=True)
     en_passant = Column(String, index=True)
     turn = Column(String, index=True)
-    greater_than_n_half_moves = Column(Integer, index=True)
+
     white_wins = Column(Integer)
     black_wins = Column(Integer)
     stalemates = Column(Integer)
+
+    fen = f"{piece_positions} {turn} {castling_rights} {en_passant} {0} {1}"
+
+    
 
     @property
     def get_hash(self):
@@ -24,7 +42,7 @@ class GamePositions(Base):
             + self.castling_rights
             + self.en_passant
             + self.turn
-            + str(self.greater_than_n_half_moves)
+            
         )
         hash_object = hashlib.sha256(game_string.encode())
         hex_dig = hash_object.hexdigest()
