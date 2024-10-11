@@ -79,6 +79,11 @@ class GamePositions(Base):
             stalemates=win_buckets["stalemates"]
         )
 
+class GamePositionRollup(GamePositions):
+    __tablename__ = "GamePositionRollup"
+    id = Column(Integer, ForeignKey("GamePositions.id"), primary_key=True)
+    game_position = relationship("GamePositions", backref="rollup_position")
+
 # Using joined table inheritance
 class TrainGamePositions(GamePositions):
     __tablename__ = "TrainGamePositions"
@@ -95,7 +100,4 @@ class ValidationGamePositions(GamePositions):
     id = Column(Integer, ForeignKey("GamePositions.id"), primary_key=True)
     game_position = relationship("GamePositions", backref="validation_position")
 
-class GamePositionRollup(GamePositions):
-    __tablename__ = "GamePositionRollup"
-    id = Column(Integer, ForeignKey("GamePositions.id"), primary_key=True)
-    game_position = relationship("GamePositions", backref="rollup_position")
+
