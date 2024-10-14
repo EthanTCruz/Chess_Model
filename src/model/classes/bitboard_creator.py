@@ -27,16 +27,11 @@ class Bitboard_Creator:
     def setup_parameters_board(self,board: chess.Board = None):
         if board is not None:
             self.game = board_to_GamePostition(board=board)
-            self.setup_parameters_gamepositions(game=self.game)
+            self.board = board
+
             return 1
 
 
-    def setup_parameters_gamepositions(self,game: GamePositions):
-        self.game = game  
-
-        self.board = chess.Board(self.game.fen())
-
-        return 0
 
 
     def get_features(self):

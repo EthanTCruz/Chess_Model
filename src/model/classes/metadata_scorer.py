@@ -23,15 +23,9 @@ class metaDataBoardEval:
     def setup_parameters_gamepositions(self,game: GamePositions):
         self.game = game  
 
-        #have to reconstruct full fen instead of just piece_positions
-        if game.greater_than_n_half_moves == 1:
-            half_moves = self.half_move_amount
-            full_moves = 2 * half_moves
-        else:
-            half_moves = 0
-            full_moves = half_moves
 
-        fen = f"{game.piece_positions} {game.turn} {game.castling_rights} {game.en_passant} {half_moves} {full_moves}"
+
+        fen = f"{game.piece_positions} {game.turn} {game.castling_rights} {game.en_passant} {0} {0}"
         
         self.board = chess.Board(fen)
         fen = self.board.fen()
@@ -192,7 +186,7 @@ class metaDataBoardEval:
         else:
             results["white turn"] = 1
         
-        results["greater than n half moves"] = self.game.greater_than_n_half_moves
+
 
         return results 
     

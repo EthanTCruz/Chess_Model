@@ -73,7 +73,6 @@ class GamePositions(Base):
             castling_rights=data["castling_rights"],
             en_passant=data["en_passant"],
             turn=data["turn"],
-            greater_than_n_half_moves=data["greater_than_n_half_moves"],
             white_wins=win_buckets["white_wins"],
             black_wins=win_buckets["black_wins"],
             stalemates=win_buckets["stalemates"]

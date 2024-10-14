@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from math import sqrt
+
 class Settings(BaseSettings): 
 
     BatchSize: int = 521
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     nnEpochs: int = 100
     nnTestSize: float = 0.02
     nnValidationSize: float  = 0.02
+    nnTrainSize: float = 1.0 - nnTestSize - nnValidationSize
 
     srcModelDirectory: str = './src/model'
     data_dir: str = f"{srcModelDirectory}/data"

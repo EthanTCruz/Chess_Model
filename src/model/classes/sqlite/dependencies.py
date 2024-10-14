@@ -1,5 +1,9 @@
 from chess_engine.src.model.classes.sqlite.database import SessionLocal
-from chess_engine.src.model.classes.sqlite.models import GamePositions,GamePositionRollup
+from chess_engine.src.model.classes.sqlite.models import (GamePositions,
+                                                          GamePositionRollup,
+                                                          TrainGamePositions,
+                                                          TestGamePositions,
+                                                          ValidationGamePositions)
 from chess_engine.src.model.config.config import Settings
 from sqlalchemy.orm import Session
 from typing import List, Tuple
@@ -40,6 +44,9 @@ def delete_all_rollup_game_positions(db: Session = next(get_db())):
 
         # Delete all records in the GamePositions table
         db.query(GamePositionRollup).delete()
+        db.query(TrainGamePositions).delete()
+        db.query(TestGamePositions).delete()
+        db.query(ValidationGamePositions).delete()
 
         # Commit the changes to the database
         db.commit()
@@ -70,8 +77,7 @@ def find_game(game_info: GamePositions,db: Session = get_db()):
             and_(GamePositions.piece_positions == game_info.piece_positions,
                 GamePositions.castling_rights == game_info.castling_rights,
                 GamePositions.en_passant == game_info.en_passant,
-                GamePositions.turn == game_info.turn,
-                GamePositions.greater_than_n_half_moves == game_info.greater_than_n_half_moves)
+                GamePositions.turn == game_info.turn)
             ).first()
     return results
 
@@ -85,8 +91,7 @@ def find_game_rollup(game_info: GamePositionRollup,db: Session = get_db()):
             and_(GamePositionRollup.piece_positions == game_info.piece_positions,
                 GamePositionRollup.castling_rights == game_info.castling_rights,
                 GamePositionRollup.en_passant == game_info.en_passant,
-                GamePositionRollup.turn == game_info.turn,
-                GamePositionRollup.greater_than_n_half_moves == game_info.greater_than_n_half_moves)
+                GamePositionRollup.turn == game_info.turn)
             ).first()
     return results
 
@@ -132,7 +137,7 @@ def board_to_GamePostition(board: chess.Board,victor: str = "NA"):
         castling_rights = castling_rights,
         en_passant = en_passant,
         turn = turn,
-        greater_than_n_half_moves = half_move_bin,
+
         white_wins = white_wins,
         black_wins = black_wins,
         stalemates = stalemates
@@ -161,7 +166,6 @@ def board_to_GamePostitionRollup(board: chess.Board):
         castling_rights = castling_rights,
         en_passant = en_passant,
         turn = turn,
-        greater_than_n_half_moves = half_move_bin,
         white_wins = white_wins,
         black_wins = black_wins,
         stalemates = stalemates
@@ -188,8 +192,7 @@ def find_rollup_move(board:chess.Board,
         condition = and_(GamePositionRollup.piece_positions == gp.piece_positions, 
                 GamePositionRollup.castling_rights == gp.castling_rights, 
                 GamePositionRollup.turn == gp.turn,
-                GamePositionRollup.en_passant == gp.en_passant, 
-                GamePositionRollup.greater_than_n_half_moves == gp.greater_than_n_half_moves)
+                GamePositionRollup.en_passant == gp.en_passant)
         conditions.append(condition)        
 
 
@@ -241,8 +244,7 @@ def find_move_for_position(boards,best_position):
         if (best_position['piece_positions'] == game_position.piece_positions and
             best_position['castling_rights'] == game_position.castling_rights and
             best_position['turn'] == game_position.turn and
-            best_position['en_passant'] == game_position.en_passant and
-            best_position['greater_than_n_half_moves'] == game_position.greater_than_n_half_moves):
+            best_position['en_passant'] == game_position.en_passant):
             return value['move'], best_position  # Return the matching board and its position data
 
 
@@ -253,7 +255,7 @@ def extract_attributes(game_position):
         "castling_rights": game_position.castling_rights,
         "en_passant": game_position.en_passant,
         "turn": game_position.turn,
-        "greater_than_n_half_moves": game_position.greater_than_n_half_moves,
+
         "white_wins": game_position.white_wins,
         "black_wins": game_position.black_wins,
         "stalemates": game_position.stalemates,
@@ -296,12 +298,12 @@ def fetch_one_game_position(db: Session = next(get_db())):
         db.close()
 
 class GamePositionWithWinBuckets:
-    def __init__(self, piece_positions, castling_rights, en_passant, turn, greater_than_n_half_moves, white_wins, black_wins, stalemates):
+    def __init__(self, piece_positions, castling_rights, en_passant, turn, white_wins, black_wins, stalemates):
         self.piece_positions = piece_positions
         self.castling_rights = castling_rights
         self.en_passant = en_passant
         self.turn = turn
-        self.greater_than_n_half_moves = greater_than_n_half_moves
+
         self.white_wins = white_wins
         self.black_wins = black_wins
         self.stalemates = stalemates
@@ -314,7 +316,7 @@ class GamePositionWithWinBuckets:
             "castling_rights": self.castling_rights,
             "en_passant": self.en_passant,
             "turn": self.turn,
-            "greater_than_n_half_moves": self.greater_than_n_half_moves,
+
         })
 
 def create_rollup_table(yield_size: int = 200,db: Session = next(get_db())):
@@ -325,7 +327,7 @@ def create_rollup_table(yield_size: int = 200,db: Session = next(get_db())):
             GamePositions.castling_rights, 
             GamePositions.en_passant, 
             GamePositions.turn, 
-            GamePositions.greater_than_n_half_moves, 
+
             func.sum(GamePositions.white_wins).label('white_wins'),
             func.sum(GamePositions.black_wins).label('black_wins'),
             func.sum(GamePositions.stalemates).label('stalemates'),
@@ -335,7 +337,7 @@ def create_rollup_table(yield_size: int = 200,db: Session = next(get_db())):
             GamePositions.castling_rights, 
             GamePositions.en_passant, 
             GamePositions.turn, 
-            GamePositions.greater_than_n_half_moves
+
         )
 
         gen = query.yield_per(yield_size)
@@ -346,7 +348,7 @@ def create_rollup_table(yield_size: int = 200,db: Session = next(get_db())):
                 castling_rights=result.castling_rights,
                 en_passant=result.en_passant,
                 turn=result.turn,
-                greater_than_n_half_moves=result.greater_than_n_half_moves,
+
                 white_wins=result.white_wins,
                 black_wins=result.black_wins,
                 stalemates=result.stalemates
@@ -367,7 +369,7 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
             GamePositionRollup.castling_rights, 
             GamePositionRollup.en_passant, 
             GamePositionRollup.turn, 
-            GamePositionRollup.greater_than_n_half_moves, 
+
             GamePositionRollup.white_wins.label('white_wins'),
             GamePositionRollup.black_wins.label('black_wins'),
             GamePositionRollup.stalemates.label('stalemates'),
@@ -377,7 +379,7 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
             GamePositionRollup.castling_rights, 
             GamePositionRollup.en_passant, 
             GamePositionRollup.turn, 
-            GamePositionRollup.greater_than_n_half_moves
+
         )
 
         gen = query.yield_per(yield_size)
@@ -388,7 +390,7 @@ def fetch_all_game_positions_rollup(yield_size: int = 200,db: Session = next(get
                 castling_rights=result.castling_rights,
                 en_passant=result.en_passant,
                 turn=result.turn,
-                greater_than_n_half_moves=result.greater_than_n_half_moves,
+
                 white_wins=result.white_wins,
                 black_wins=result.black_wins,
                 stalemates=result.stalemates
@@ -434,7 +436,7 @@ def get_rollup_row_count(db: Session = next(get_db())):
             GamePositions.castling_rights, 
             GamePositions.en_passant, 
             GamePositions.turn, 
-            GamePositions.greater_than_n_half_moves, 
+
             GamePositions.white_wins.label('white_wins'),
             GamePositions.black_wins.label('black_wins'),
             GamePositions.stalemates.label('stalemates'),
@@ -444,7 +446,7 @@ def get_rollup_row_count(db: Session = next(get_db())):
             GamePositions.castling_rights, 
             GamePositions.en_passant, 
             GamePositions.turn, 
-            GamePositions.greater_than_n_half_moves
+
         ).count()
         return count
     
@@ -462,7 +464,7 @@ def get_GamePositionRollup_row_size(db: Session = next(get_db())):
             GamePositionRollup.castling_rights, 
             GamePositionRollup.en_passant, 
             GamePositionRollup.turn, 
-            GamePositionRollup.greater_than_n_half_moves, 
+
             GamePositionRollup.white_wins.label('white_wins'),
             GamePositionRollup.black_wins.label('black_wins'),
             GamePositionRollup.stalemates.label('stalemates'),
@@ -472,7 +474,7 @@ def get_GamePositionRollup_row_size(db: Session = next(get_db())):
             GamePositionRollup.castling_rights, 
             GamePositionRollup.en_passant, 
             GamePositionRollup.turn, 
-            GamePositionRollup.greater_than_n_half_moves
+
         ).count()
         return count
     

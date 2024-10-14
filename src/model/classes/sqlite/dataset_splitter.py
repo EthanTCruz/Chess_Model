@@ -9,10 +9,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from sqlalchemy.orm import load_only
 import random
+from chess_engine.src.model.config.config import Settings
+settings = Settings()
 
-def split_game_positions_in_batches(train_pct: float, 
-                                    test_pct: float,
-                                    validation_pct: float,
+
+
+def split_game_positions_in_batches(train_pct: float = settings.nnTrainSize, 
+                                    test_pct: float = settings.nnTestSize,
+                                    validation_pct: float = settings.nnValidationSize,
                                     batch_size: int = 1000,
                                     db: Session = next(get_db())):
     # Validate the input percentages add up to 1.0
@@ -22,9 +26,15 @@ def split_game_positions_in_batches(train_pct: float,
     offset = 0
     while True:
         # Retrieve a batch of records from GamePositions
-        game_positions_batch = db.query(GamePositions).options(load_only(
-            "id", "piece_positions", "castling_rights", "en_passant", "turn", "greater_than_n_half_moves",
-            "white_wins", "black_wins", "stalemates"
+        game_positions_batch = db.query(GamePositionRollup).options(load_only(
+            GamePositionRollup.id,
+            GamePositionRollup.piece_positions,
+            GamePositionRollup.castling_rights,
+            GamePositionRollup.en_passant,
+            GamePositionRollup.turn,
+            GamePositionRollup.white_wins,
+            GamePositionRollup.black_wins,
+            GamePositionRollup.stalemates
         )).offset(offset).limit(batch_size).all()
 
         if not game_positions_batch:
@@ -47,15 +57,15 @@ def split_game_positions_in_batches(train_pct: float,
 
         # Insert the records into respective tables
         for record in train_records:
-            train_record = TrainGamePositions(**{column.name: getattr(record, column.name) for column in GamePositions.__table__.columns})
+            train_record = TrainGamePositions(**{column.name: getattr(record, column.name) for column in GamePositions.__table__.columns if column.name != "id"})
             db.add(train_record)
 
         for record in test_records:
-            test_record = TestGamePositions(**{column.name: getattr(record, column.name) for column in GamePositions.__table__.columns})
+            test_record = TestGamePositions(**{column.name: getattr(record, column.name) for column in GamePositions.__table__.columns if column.name != "id"})
             db.add(test_record)
 
         for record in validation_records:
-            validation_record = ValidationGamePositions(**{column.name: getattr(record, column.name) for column in GamePositions.__table__.columns})
+            validation_record = ValidationGamePositions(**{column.name: getattr(record, column.name) for column in GamePositions.__table__.columns if column.name != "id"})
             db.add(validation_record)
 
         # Commit the changes to the database after processing the batch
@@ -63,5 +73,7 @@ def split_game_positions_in_batches(train_pct: float,
 
         # Update the offset to get the next batch
         offset += batch_size
+
+    db.close()
 
 
